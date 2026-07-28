@@ -1,0 +1,149 @@
+#!/usr/bin/env node
+import { mkdirSync, realpathSync, writeFileSync } from 'node:fs';
+import { resolve, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { aggregateUsage } from './aggregate.js';
+import { buildCanvasPayload, validateCanvasPayload } from './canvas.js';
+import { loadQuoteConfig, loadVibeConfig } from './config.js';
+import { formatRequestLog, maskIdentifier } from './http.js';
+import { inspectPng } from './png.js';
+import { getCanvasStatus, listDeviceTasks, pushCanvasAndWait, selectCanvasTask } from './quote.js';
+import { fetchUsage } from './vibe.js';
+
+const HELP = `vibe-usage-quote0
+
+用法：
+  vibe-usage-quote0 doctor   检查 Vibe 与 Quote/0 前提
+  vibe-usage-quote0 dry-run  获取 Vibe 用量并输出脱敏摘要
+  vibe-usage-quote0 push     推送画板并等待渲染状态变化
+`;
+
+function defaultLogger(event) {
+  process.stderr.write(`${formatRequestLog(event)}\n`);
+}
+
+async function collectUsage(vibe, options) {
+  const [todayResponse, weekResponse] = await Promise.all([
+    fetchUsage({ ...vibe, days: 1, fetchImpl: options.fetchImpl, logger: options.logger, retryOptions: options.retryOptions }),
+    fetchUsage({ ...vibe, days: 7, fetchImpl: options.fetchImpl, logger: options.logger, retryOptions: options.retryOptions }),
+  ]);
+  return aggregateUsage(todayResponse, weekResponse);
+}
+
+function dryRunSummary(summary, payload, payloadInfo) {
+  return {
+    today: {
+      tokens: summary.today.totalTokens,
+      cost: Number(summary.today.estimatedCost.toFixed(6)),
+      sessions: summary.today.sessionCount,
+      activeSeconds: summary.today.activeSeconds,
+    },
+    last7Days: {
+      tokens: summary.week.totalTokens,
+      cost: Number(summary.week.estimatedCost.toFixed(6)),
+    },
+    topTools: summary.week.topTools,
+    topModels: summary.week.topModels,
+    payload: {
+      taskAlias: payload.taskAlias,
+      refreshNow: payload.refreshNow,
+      border: payload.border,
+      bytes: payloadInfo.bytes,
+      elementTypes: payloadInfo.elementTypes,
+      containsProject: false,
+      containsSecrets: false,
+    },
+  };
+}
+
+async function downloadRender(url, options) {
+  if (!/^https?:\/\//i.test(url)) throw new Error('渲染图 URL 非 http(s)');
+  options.logger({ phase: 'request', stage: 'Quote 渲染图下载', attempt: 1, identifier: maskIdentifier('render') });
+  const response = await (options.fetchImpl ?? globalThis.fetch)(url, { signal: AbortSignal.timeout(15_000) });
+  options.logger({ phase: 'status', stage: 'Quote 渲染图下载', status: response.status, identifier: maskIdentifier('render') });
+  if (!response.ok) throw new Error(`Quote 渲染图下载返回 HTTP ${response.status}`);
+  const buffer = Buffer.from(await response.arrayBuffer());
+  const inspection = inspectPng(buffer);
+  const artifactsDir = join(options.cwd, 'artifacts');
+  mkdirSync(artifactsDir, { recursive: true });
+  const path = join(artifactsDir, 'quote0-render.png');
+  writeFileSync(path, buffer, { mode: 0o600 });
+  return { path, inspection };
+}
+
+export async function runCli(argv = process.argv.slice(2), options = {}) {
+  const command = argv[0] ?? 'help';
+  const env = options.env ?? process.env;
+  const stdout = options.stdout ?? ((line) => process.stdout.write(`${line}\n`));
+  const logger = options.logger ?? defaultLogger;
+  const runtime = {
+    env,
+    stdout,
+    logger,
+    fetchImpl: options.fetchImpl,
+    retryOptions: options.retryOptions,
+    cwd: options.cwd ?? process.cwd(),
+  };
+
+  if (command === 'help' || command === '--help' || command === '-h') {
+    stdout(HELP.trimEnd());
+    return { command: 'help' };
+  }
+  if (!['doctor', 'dry-run', 'push'].includes(command)) {
+    throw new Error(`未知命令：${command}`);
+  }
+
+  const vibe = loadVibeConfig(env);
+  if (vibe.insecureMode) stdout('警告：~/.vibe-usage/config.json 权限宽于 0600；未自动修改。');
+  const summary = await collectUsage(vibe, runtime);
+
+  if (command === 'dry-run') {
+    const payload = buildCanvasPayload(summary, options.now ?? new Date());
+    const payloadInfo = validateCanvasPayload(payload, [vibe.apiKey]);
+    stdout(JSON.stringify(dryRunSummary(summary, payload, payloadInfo), null, 2));
+    return { command, summary, payload };
+  }
+
+  const quote = loadQuoteConfig(env);
+  if (command === 'doctor') {
+    const tasks = await listDeviceTasks(quote, runtime);
+    const task = selectCanvasTask(tasks.data, quote.taskKey);
+    await getCanvasStatus(quote, runtime);
+    stdout('Vibe 1 日与 7 日用量响应校验通过。');
+    stdout(`Quote CANVAS_API 已找到：${maskIdentifier(task.taskKey ?? task.key ?? task.id)}`);
+    stdout('Quote 设备状态与 renderInfo 响应校验通过。');
+    return { command, summary, task };
+  }
+
+  const payload = buildCanvasPayload(summary, options.now ?? new Date());
+  validateCanvasPayload(payload, [vibe.apiKey, quote.apiKey]);
+  const result = await pushCanvasAndWait(quote, payload, {
+    ...runtime,
+    timeoutMs: options.timeoutMs,
+    pollIntervalMs: options.pollIntervalMs,
+    delay: options.delay,
+  });
+  stdout(`Canvas POST HTTP ${result.postStatus}；渲染状态已变化。`);
+  let render = null;
+  if (result.renderImageUrl) {
+    render = await downloadRender(result.renderImageUrl, runtime);
+    stdout(`渲染图已保存：${render.path}`);
+    stdout(`渲染图检查：${render.inspection.width}×${render.inspection.height}，黑白=${render.inspection.blackAndWhite}`);
+    stdout(`画面墨点：覆盖=${(render.inspection.inkCoverage * 100).toFixed(1)}%，边缘=${render.inspection.edgeInkPixels}`);
+  } else {
+    stdout('API 已确认，视觉未确认：状态未返回渲染图 URL。');
+  }
+  return { command, summary, payload, result, render };
+}
+
+const currentFile = fileURLToPath(import.meta.url);
+const isDirectRun =
+  process.argv[1] != null &&
+  resolve(realpathSync(process.argv[1])) === currentFile;
+
+if (isDirectRun) {
+  runCli().catch((error) => {
+    process.stderr.write(`失败：${error?.message || String(error)}\n`);
+    process.exitCode = 1;
+  });
+}

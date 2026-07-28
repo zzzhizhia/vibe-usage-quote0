@@ -1,0 +1,16 @@
+反向验证日期：2026-07-28（Asia/Shanghai）
+
+RED
+命令：npm test
+实际测试命令：node --test test/*.test.js
+临时变更：删除 test/fixtures/usage.js 中 todayUsage.hasAnyData 必需字段
+退出码：1
+摘要：tests 26 / pass 23 / fail 3 / skipped 0 / todo 0
+关键错误：InvalidResponseError: Vibe 响应缺少 hasAnyData 布尔值
+
+GREEN
+命令：npm test
+实际测试命令：node --test test/*.test.js
+还原：恢复 todayUsage.hasAnyData=true
+退出码：0
+摘要：tests 26 / pass 26 / fail 0 / skipped 0 / todo 0

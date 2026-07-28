@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.vibecafe.vibe-usage-quote0</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/zzzhizhi/.local/share/fnm/node-versions/v24.14.0/installation/bin/node</string>
+    <string>/Users/zzzhizhi/Developer/zzzhizhia/vibe-usage-quote0/src/index.js</string>
+    <string>push</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/zzzhizhi/Developer/zzzhizhia/vibe-usage-quote0</string>
+  <key>StartInterval</key>
+  <integer>1800</integer>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/Users/zzzhizhi/Developer/zzzhizhia/vibe-usage-quote0/artifacts/launchd.stdout.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/zzzhizhi/Developer/zzzhizhia/vibe-usage-quote0/artifacts/launchd.stderr.log</string>
+</dict>
+</plist>

@@ -1,0 +1,9 @@
+node_modules/
+artifacts/*.log
+artifacts/*.png
+!artifacts/quote0-render.png
+!artifacts/quote0-render-4x.png
+*.local
+.env
+.env.*
+!.env.example
