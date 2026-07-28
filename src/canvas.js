@@ -104,7 +104,7 @@ export function buildCanvasPayload(summary, now = new Date()) {
                 children: [
                   {
                     type: 'span',
-                    props: { tw: 'font-bold', style: { letterSpacing: '0.5px' }, children: 'VIBE CAFÉ' },
+                    props: { tw: 'font-bold', style: { letterSpacing: '0.5px' }, children: 'VIBE USAGE' },
                   },
                   {
                     type: 'span',

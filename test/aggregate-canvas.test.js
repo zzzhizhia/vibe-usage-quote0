@@ -95,7 +95,7 @@ test('Canvas 合同固定且只含白名单元素', () => {
   assert.equal('model1' in payload.data, false);
   assert.ok(info.bytes < 4_000);
   const serialized = JSON.stringify(payload.windowData);
-  assert.match(serialized, /VIBE CAFÉ/);
+  assert.match(serialized, /VIBE USAGE/);
   assert.match(serialized, /主力/);
   assert.doesNotMatch(serialized, /bg-black text-white/);
   assert.doesNotMatch(serialized, /今日 TOKEN/);

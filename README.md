@@ -1,8 +1,8 @@
 # vibe-usage-quote0
 
-把 Vibe Café 云端的真实 AI 编码用量，稳定推送到 Quote/0 的 296×152 黑白桌面画板。画面突出今日 Token，并显示今日费用、会话数、活跃时长、近 7 日 Token/费用，以及一个主力工具和模型提示；不会发送项目名。
+把 Vibe Usage 云端的真实 AI 编码用量，稳定推送到 Quote/0 的 296×152 黑白桌面画板。画面突出今日 Token，并显示今日费用、会话数、活跃时长、近 7 日 Token/费用，以及一个主力工具和模型提示；不会发送项目名。
 
-![Vibe Café 在 Quote/0 上的用量画板示例](artifacts/quote0-render-4x.png)
+![Vibe Usage 在 Quote/0 上的用量画板示例](artifacts/quote0-render-4x.png)
 
 ## 要求
 
@@ -66,7 +66,7 @@ npm run push
 
 ## 每 30 分钟更新（仅模板）
 
-[launchd/com.vibecafe.vibe-usage-quote0.plist](launchd/com.vibecafe.vibe-usage-quote0.plist) 已写入本机当前的绝对 Node 路径、脚本路径、工作目录和日志路径，`StartInterval` 为 1800 秒，不含任何秘密。
+[launchd/com.vibeusage.vibe-usage-quote0.plist](launchd/com.vibeusage.vibe-usage-quote0.plist) 已写入本机当前的绝对 Node 路径、脚本路径、工作目录和日志路径，`StartInterval` 为 1800 秒，不含任何秘密。
 
 launchd 通常不继承交互式 shell 的环境变量，因此计划任务建议使用上面的 `0600` Quote 配置文件。安装前请先手动运行 `doctor` 和 `push`。
 
@@ -74,16 +74,16 @@ launchd 通常不继承交互式 shell 的环境变量，因此计划任务建�
 
 ```bash
 mkdir -p ~/Library/LaunchAgents
-cp launchd/com.vibecafe.vibe-usage-quote0.plist ~/Library/LaunchAgents/
-plutil -lint ~/Library/LaunchAgents/com.vibecafe.vibe-usage-quote0.plist
-launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.vibecafe.vibe-usage-quote0.plist
+cp launchd/com.vibeusage.vibe-usage-quote0.plist ~/Library/LaunchAgents/
+plutil -lint ~/Library/LaunchAgents/com.vibeusage.vibe-usage-quote0.plist
+launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.vibeusage.vibe-usage-quote0.plist
 ```
 
 卸载模板：
 
 ```bash
-launchctl bootout "gui/$(id -u)/com.vibecafe.vibe-usage-quote0"
-rm ~/Library/LaunchAgents/com.vibecafe.vibe-usage-quote0.plist
+launchctl bootout "gui/$(id -u)/com.vibeusage.vibe-usage-quote0"
+rm ~/Library/LaunchAgents/com.vibeusage.vibe-usage-quote0.plist
 ```
 
 本项目只交付模板和说明，不会自动执行这些命令。
@@ -94,7 +94,7 @@ rm ~/Library/LaunchAgents/com.vibecafe.vibe-usage-quote0.plist
 npm run build
 npm test
 npm run security-check
-plutil -lint launchd/com.vibecafe.vibe-usage-quote0.plist
+plutil -lint launchd/com.vibeusage.vibe-usage-quote0.plist
 ```
 
 `security-check` 会扫描整个项目根目录：发现真实凭据或白名单外文件都会非零退出，而不是只检查预期交付目录。

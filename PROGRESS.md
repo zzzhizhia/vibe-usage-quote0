@@ -45,8 +45,8 @@
 
 - README 已覆盖配置优先级、Content Studio/CANVAS_API 前提、手动命令、0600 Quote 配置、launchd 安装/卸载与故障排查。
 - launchd 模板使用当前稳定绝对 Node 路径、绝对脚本路径、工作目录、日志路径与 `StartInterval=1800`；未嵌入秘密。
-- `plutil -lint launchd/com.vibecafe.vibe-usage-quote0.plist`：`OK`。
-- 系统侧检查：`~/Library/LaunchAgents/com.vibecafe.vibe-usage-quote0.plist` 不存在；`launchctl print gui/501/com.vibecafe.vibe-usage-quote0` 找不到服务；系统安装改动为 0。
+- `plutil -lint launchd/com.vibeusage.vibe-usage-quote0.plist`：`OK`。
+- 系统侧检查：`~/Library/LaunchAgents/com.vibeusage.vibe-usage-quote0.plist` 不存在；`launchctl print gui/501/com.vibeusage.vibe-usage-quote0` 找不到服务；系统安装改动为 0。
 - `npm run build`：通过，语法检查 10 个 JS 文件。
 - `npm test`：26/26 通过，0 skipped，0 todo。
 - `npm run security-check`：扫描 22 个文本文件，真实凭据命中 `0`。
@@ -104,7 +104,7 @@
 ## Impeccable 排版精修
 
 - 用户明确指定 `Impeccable`，按 `impeccable polish` 对精简版进行旗舰质量细节检查；原任务文件边界禁止新增 `PRODUCT.md`，因此继续以现有代码与真机渲染作为设计系统。
-- 品牌标题从 `VIBE USAGE` 调整为 `VIBE CAFÉ`，与数据来源一致；品牌与更新时间使用同一字号和基线。
+- 品牌标题曾按数据来源调整，现已统一为 `VIBE USAGE`；品牌与更新时间使用同一字号和基线。
 - 将视觉上连续的“今日 TOKEN”拆成独立字重层级：中文“今日”加粗，英文单位减小，降低标题噪声。
 - 近 7 日区域改为左对齐局部列，并将费用显示改为 `费用 $…`，消除孤立金额的语义歧义。
 - 今日费用、会话、活跃改为三个等宽列，分别采用左／中／右光学对齐，形成稳定横向节奏。
@@ -148,7 +148,7 @@
 ## Impeccable 全面审计与优化：定向修复（完成）
 
 - 按审计顺序执行 `typeset → harden → adapt → polish`，未更换已在 Quote 真机验证的字体、布局骨架或黑白主题。
-- 最小字号从 9px 提升到 10px；`VIBE CAFÉ` 与 `TOKEN` 增加轻微字距，改善 1-bit 全大写字形分离；今日 40px、近 7 日 22px 的主次层级保持不变。
+- 最小字号从 9px 提升到 10px；`VIBE USAGE` 与 `TOKEN` 增加轻微字距，改善 1-bit 全大写字形分离；今日 40px、近 7 日 22px 的主次层级保持不变。
 - Token、费用、会话、活跃时长增加有界格式：真实常规范围保持原显示；极端有限值分别收敛为 `9999万亿+`、`$9999亿+`、`9999万+`、`100年+`，不再产生指数文本或依赖 ellipsis 隐藏数量级。
 - 主力工具/模型改用近似显示宽度预算，CJK 按双宽计算；两项各自保留配额，长工具名不再把模型完全挤出画面。
 - 删除真机已证明不可见的 `borderTopWidth/borderTopStyle`，只保留有效留白；没有继续尝试不稳定分隔线。
@@ -179,3 +179,12 @@
 - 用户已明确授权执行 `git init commit`，解除原任务“不初始化 Git”的限制；`BLOCKED.md` 已移除 Git 仓库阻塞。
 - `.gitignore` 继续忽略一般 PNG，但明确纳入 README 使用的最终原图与 4×示例图；审计中间产生的两份约 9.8MB 用户照片转换副本不进入交付并将清理。
 - 已在 `main` 分支创建根提交，提交信息为 `feat: add Vibe usage Quote/0 dashboard`；提交前 `git diff --cached --check` 与全根目录安全扫描均通过。
+
+## 品牌统一为 Vibe Usage（完成）
+
+- 画板标题、README、包描述、测试、审计文档和自有 launchd 标识统一改为 `Vibe Usage` / `VIBE USAGE`。
+- launchd 模板与 Label 已统一为 `com.vibeusage.vibe-usage-quote0`；当前系统尚未安装旧模板，因此没有迁移冲突。
+- 为保证数据准确与可运行性，真实 API 地址 `https://vibecafe.ai` 与上游仓库真实路径 `vibe-cafe/vibe-usage` 不伪造改名；它们不是用户可见品牌文案。
+- `npm run build` exit 0；`npm test` 33/33、0 skipped/todo；`npm run security-check` 为 `unexpected_path_count=0`、`actual_secret_matches=0`；新 launchd 模板 `plutil -lint` 为 `OK`。
+- 首次改名推送已取得 Canvas POST HTTP 200，但执行会话提前结束，未把它误报为渲染完成；第二次完整推送 exit 0，Canvas POST HTTP 200、状态变化、渲染图下载 HTTP 200。
+- 最终真实图片为 296×152、2 色黑白、墨点覆盖 8.1%、边缘墨点 0；实际查看顶部已显示 `VIBE USAGE`，其余内容无重叠、截断或越界，README 4×示例图已同步刷新。

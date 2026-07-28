@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.vibecafe.vibe-usage-quote0</string>
+  <string>com.vibeusage.vibe-usage-quote0</string>
   <key>ProgramArguments</key>
   <array>
     <string>/Users/zzzhizhi/.local/share/fnm/node-versions/v24.14.0/installation/bin/node</string>

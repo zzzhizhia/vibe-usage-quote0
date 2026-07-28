@@ -2,7 +2,7 @@
 
 审计日期：2026-07-28（Asia/Shanghai）
 
-审计对象：Quote/0 296×152、1-bit 黑白 Vibe Café 用量画板
+审计对象：Quote/0 296×152、1-bit 黑白 Vibe Usage 用量画板
 依据：当前 `src/canvas.js`、真实 `dry-run`、真实渲染图 `artifacts/quote0-render.png`、用户真机照片与 Quote Canvas 只读规格。
 
 ## Anti-Patterns Verdict
