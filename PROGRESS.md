@@ -156,7 +156,7 @@
 - 新增 4 项测试后首次为 30/31：失败精确暴露“边缘”实现用了外侧 2px，而验收语义是触碰最外 1px；修实现、不改断言后为 31/31，0 skipped/todo。
 - 本地三状态 payload：固定 fixture `3876 bytes`、空数据 `3882 bytes`、极端数据 `3947 bytes`，均低于 4KB；性能测量未发现值得牺牲清晰度的优化点。
 
-## Impeccable 全面审计与优化：真机复验与复审（代码/视觉完成，安全轮换阻塞）
+## Impeccable 全面审计与优化：真机复验与复审（完成）
 
 - 第一版真实优化推送：Quote Canvas POST HTTP 200、状态变化、渲染图下载 HTTP 200、296×152、黑白、边缘墨点 0；放大检查发现 10px 反相“主力”仍有笔画粘连。
 - 最终 polish 删除反相黑块，将“主力”改为普通加粗黑字；不改主数字、7 日对照、三项指标或数据内容。最终真实 payload 为 `3843 bytes`，较审计基线 `3859 bytes` 小 16 bytes。
@@ -167,7 +167,7 @@
 - 最终自动 detector 输出 `[]`；仅作为辅助，不代替真机证据。
 - 系统状态复查：launchd plist 不存在、服务未加载，系统安装改动为 0；当前目录仍非 Git 仓库。
 - 路径审计发现两个白名单外根文件是 Quote 配置的精确明文副本。已删除这两个精确副本，正规 `0600` 配置未修改；随后将安全扫描改为覆盖整个项目根目录并校验路径白名单。
-- 修复后 `npm run security-check`：`credential_files_scanned=26`、`unexpected_path_count=0`、`actual_secret_matches=0`。但旧 Quote key 已在本任务工具输出中暴露，必须由用户轮换；在此之前保密完成条件不算通过，见 `BLOCKED.md`。
+- 修复后 `npm run security-check`：`credential_files_scanned=26`、`unexpected_path_count=0`、`actual_secret_matches=0`。旧 Quote key 曾在本任务工具输出中暴露；用户后来明确接受该风险并取消轮换要求，因此不再作为阻塞。
 - 流程合规说明：审计探测图像工具时有一条只读命令使用了 `|| true`；未用于测试或吞错，但严格按任务规则仍属于不可撤销的流程违规，已写入 `BLOCKED.md`。
 
 ## README 示例图（完成）
@@ -188,3 +188,12 @@
 - `npm run build` exit 0；`npm test` 33/33、0 skipped/todo；`npm run security-check` 为 `unexpected_path_count=0`、`actual_secret_matches=0`；新 launchd 模板 `plutil -lint` 为 `OK`。
 - 首次改名推送已取得 Canvas POST HTTP 200，但执行会话提前结束，未把它误报为渲染完成；第二次完整推送 exit 0，Canvas POST HTTP 200、状态变化、渲染图下载 HTTP 200。
 - 最终真实图片为 296×152、2 色黑白、墨点覆盖 8.1%、边缘墨点 0；实际查看顶部已显示 `VIBE USAGE`，其余内容无重叠、截断或越界，README 4×示例图已同步刷新。
+
+## launchd 自动更新安装（完成）
+
+- 用户明确接受旧 Quote key 风险并取消轮换要求，解除自动更新安装阻塞。
+- 已安装 `~/Library/LaunchAgents/com.vibeusage.vibe-usage-quote0.plist`，权限 `0644`；Label 为 `com.vibeusage.vibe-usage-quote0`，模板与系统 plist 均不含秘密。
+- launchd 当前为已加载、非运行中等待状态，`run interval = 1800 seconds`、`runs = 2`、`last exit code = 0`。
+- 首次 `RunAtLoad` 已完成 Vibe/Quote HTTP 200 与 Canvas POST 200，但 90 秒内未观察到渲染状态变化，exit 1；没有误报成功。
+- 随后用 `launchctl kickstart -k` 验证第二次后台运行：Canvas POST HTTP 200、渲染状态变化、图片下载 HTTP 200，最终 exit 0。
+- 后台渲染图为 296×152 黑白、墨点覆盖 7.9%、边缘墨点 0；日志写入 `artifacts/launchd.stdout.log` 与 `artifacts/launchd.stderr.log`，日志不含密钥。
