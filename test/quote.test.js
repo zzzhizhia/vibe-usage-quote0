@@ -6,6 +6,7 @@ import { buildCanvasPayload, validateCanvasPayload } from '../src/canvas.js';
 import {
   canvasTaskKey,
   findCanvasTasks,
+  getCanvasStatus,
   pushCanvasAndWait,
   renderChanged,
   selectCanvasTask,
@@ -55,6 +56,114 @@ test('当前渲染图 URL 变化也可证明新渲染', () => {
   assert.equal(renderChanged(before, after), true);
 });
 
+test('Quote 状态明确为休眠时拒绝误报设备可用', async () => {
+  let calls = 0;
+  const fetchImpl = async () => {
+    calls += 1;
+    return new Response(JSON.stringify({
+      status: {
+        current: '休眠中',
+        description: '设备休眠中以节省电量',
+      },
+      renderInfo: { last: 'old', current: { image: null } },
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  };
+
+  await assert.rejects(
+    getCanvasStatus(
+      { apiUrl: 'https://quote.local', apiKey: 'quote-test-key', deviceId: 'DEVICE-1234' },
+      { fetchImpl, retryOptions: { baseDelayMs: 1 } },
+    ),
+    /设备休眠/,
+  );
+  assert.equal(calls, 1);
+});
+
+test('Quote 返回未知设备状态时 fail-closed', async () => {
+  const fetchImpl = async () => new Response(JSON.stringify({
+    status: {
+      current: 'Firmware Transition',
+      description: 'State is changing',
+    },
+    renderInfo: { last: 'old', current: { image: null } },
+  }), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
+
+  await assert.rejects(
+    getCanvasStatus(
+      { apiUrl: 'https://quote.local', apiKey: 'quote-test-key', deviceId: 'DEVICE-1234' },
+      { fetchImpl, retryOptions: { baseDelayMs: 1 } },
+    ),
+    /无法确认可用/,
+  );
+});
+
+test('Quote 明确不可用时不会被 ready to use 子串误放行', async () => {
+  const fetchImpl = async () => new Response(JSON.stringify({
+    status: {
+      current: 'Power Inactive',
+      description: 'The device is not ready to use',
+    },
+    renderInfo: { last: 'old', current: { image: null } },
+  }), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
+
+  await assert.rejects(
+    getCanvasStatus(
+      { apiUrl: 'https://quote.local', apiKey: 'quote-test-key', deviceId: 'DEVICE-1234' },
+      { fetchImpl, retryOptions: { baseDelayMs: 1 } },
+    ),
+    /设备不可用/,
+  );
+});
+
+test('休眠设备在 Canvas POST 前失败', async () => {
+  let canvasPosts = 0;
+  const server = createServer((request, response) => {
+    response.setHeader('content-type', 'application/json');
+    if (request.url.endsWith('/loop/list')) {
+      response.end(JSON.stringify({ tasks: [{ taskKey: 'canvas-1', type: 'CANVAS_API' }] }));
+      return;
+    }
+    if (request.url.endsWith('/status')) {
+      response.end(JSON.stringify({
+        status: { current: '休眠中', description: '设备休眠中以节省电量' },
+        renderInfo: { last: 'old', current: { image: null } },
+      }));
+      return;
+    }
+    if (request.url.endsWith('/canvas')) {
+      canvasPosts += 1;
+      response.end(JSON.stringify({ message: 'unexpected' }));
+      return;
+    }
+    response.statusCode = 404;
+    response.end('{}');
+  });
+  const address = await listen(server);
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+  try {
+    await assert.rejects(
+      pushCanvasAndWait(
+        { apiUrl: baseUrl, apiKey: 'quote-test-key', deviceId: 'DEVICE-1234' },
+        { taskAlias: 'Vibe Usage', data: {}, windowData: { default: [] } },
+        { timeoutMs: 10, pollIntervalMs: 1, retryOptions: { baseDelayMs: 1 } },
+      ),
+      /设备休眠/,
+    );
+    assert.equal(canvasPosts, 0);
+  } finally {
+    await close(server);
+  }
+});
+
 test('本地 mock 证明鉴权隔离、Payload 防泄漏与渲染变化', async () => {
   const seen = [];
   let pushed = false;
@@ -73,7 +182,10 @@ test('本地 mock 证明鉴权隔离、Payload 防泄漏与渲染变化', async 
       return;
     }
     if (request.url.endsWith('/status')) {
-      response.end(JSON.stringify({ renderInfo: { last: pushed ? 'new' : 'old', current: { image: null } } }));
+      response.end(JSON.stringify({
+        status: { current: 'Power Active', description: 'The device is power active and ready to use' },
+        renderInfo: { last: pushed ? 'new' : 'old', current: { image: null } },
+      }));
       return;
     }
     if (request.url.endsWith('/canvas')) {

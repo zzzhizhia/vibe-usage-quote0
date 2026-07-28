@@ -1,7 +1,41 @@
 import { InvalidResponseError, requestJson } from './http.js';
 
+export class DeviceUnavailableError extends InvalidResponseError {
+  constructor(message) {
+    super(message);
+    this.name = 'DeviceUnavailableError';
+  }
+}
+
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+const unavailableStates = [
+  { pattern: /休眠|睡眠|\bsleep(?:ing)?\b/i, label: '设备休眠中' },
+  { pattern: /离线|断开|未连接|\boffline\b|\bdisconnected\b/i, label: '设备离线' },
+  { pattern: /关机|已关闭|\bpower(?:ed)?\s*off\b|\bshut(?:ting)?\s*down\b/i, label: '设备已关机' },
+  { pattern: /不可用|\bunavailable\b|\bnot\s+ready\b/i, label: '设备不可用' },
+];
+
+const availableStatePattern = /^(?:(?:power|battery)\s+active|active|ready|在线|运行中|工作中|供电中|电池供电中|电源活跃|电池活跃)$/i;
+const availableDescriptionPattern = /ready\s+to\s+use|可用|可以使用|正常运行|已接入电源/i;
+
+export function assertDeviceAvailable(data) {
+  if (!isRecord(data.status)) throw new InvalidResponseError('Quote 设备状态缺少 status');
+  const current = typeof data.status.current === 'string' ? data.status.current.trim() : '';
+  const description = typeof data.status.description === 'string' ? data.status.description.trim() : '';
+  if (!current) throw new InvalidResponseError('Quote 设备状态缺少 status.current');
+  if (!description) throw new InvalidResponseError('Quote 设备状态缺少 status.description');
+
+  const combined = `${current}\n${description}`;
+  const unavailable = unavailableStates.find(({ pattern }) => pattern.test(combined));
+  if (unavailable) throw new DeviceUnavailableError(`Quote ${unavailable.label}；请唤醒设备后重试`);
+
+  if (!availableStatePattern.test(current) && !availableDescriptionPattern.test(description)) {
+    throw new DeviceUnavailableError('Quote 设备状态无法确认可用；请确认设备已唤醒并接入电源与网络');
+  }
+  return { current };
 }
 
 function taskKeyOf(task) {
@@ -115,6 +149,7 @@ export async function getCanvasStatus(config, options = {}) {
     identifier: config.deviceId,
     validate: (data) => {
       if (!isRecord(data)) throw new InvalidResponseError('Quote 设备状态必须是对象');
+      assertDeviceAvailable(data);
       if (!isRecord(data.renderInfo)) throw new InvalidResponseError('Quote 设备状态缺少 renderInfo');
       if (!('last' in data.renderInfo)) throw new InvalidResponseError('Quote 设备状态缺少 renderInfo.last');
       if (!isRecord(data.renderInfo.current)) throw new InvalidResponseError('Quote 设备状态缺少 renderInfo.current');

@@ -58,9 +58,9 @@ npm run dry-run
 npm run push
 ```
 
-- `doctor`：实际读取 Vibe 1 日/7 日数据，并确认目标设备循环中存在唯一或精确指定的 `CANVAS_API`。
+- `doctor`：实际读取 Vibe 1 日/7 日数据，确认目标设备循环中存在唯一或精确指定的 `CANVAS_API`，并通过 `/status` 确认设备已唤醒且可用。
 - `dry-run`：只访问 Vibe，输出聚合数值、Top 3 与 Canvas payload 的脱敏摘要；不访问 Quote。
-- `push`：读取 Vibe，通过 `/loop/list` 精确选择画板，通过 `/status` 获取初始状态，POST Canvas，再等待最多 90 秒；只有 `renderInfo.last` 或当前渲染图发生变化才成功。
+- `push`：读取 Vibe，通过 `/loop/list` 精确选择画板，通过 `/status` 检查设备可用性并获取初始状态；休眠、离线、关机或未知状态会在 Canvas POST 前失败。设备可用时才 POST Canvas，再等待最多 90 秒；只有 `renderInfo.last` 或当前渲染图发生变化才成功。
 
 如果 Quote 状态返回渲染图 URL，`push` 会下载到 `artifacts/quote0-render.png`，检查尺寸、彩色像素、墨点覆盖率与是否触碰画布边缘；没有 URL 时只报告“API 已确认，视觉未确认”。自动检查只作为辅助，最终仍需查看真机图确认排版。
 
@@ -102,6 +102,8 @@ plutil -lint launchd/com.vibeusage.vibe-usage-quote0.plist
 - `401`：Vibe 或 Quote key 无效；客户端不会重试。
 - `429`、`5xx`、网络错误：最多退避重试 3 次，仍失败则非零退出。
 - “多个 CANVAS_API”：设置精确的 `QUOTE0_TASK_KEY`，程序不会猜目标。
+- “设备休眠中”：连接电源或按设备说明唤醒后重试；程序不会把 HTTP 200 误报为设备可用，也不会在休眠状态下发送 Canvas POST。launchd 会在下一个 30 分钟周期再次尝试。
+- “设备状态无法确认可用”：API 返回了未识别状态；为避免错误推送，程序会 fail-closed。先确认设备已唤醒、已接入电源和网络，再运行 `doctor`。
 - “90 秒内未变化”：Canvas POST 可能已接收，但没有证据证明设备完成新渲染，不能算成功。
 - 只有“API 已确认，视觉未确认”：状态变化已确认，但 API 没返回可下载的渲染图 URL。
 - launchd 无法启动：先核对 plist 中的绝对 Node/项目路径，再查看 `artifacts/launchd.stderr.log`。

@@ -197,3 +197,18 @@
 - 首次 `RunAtLoad` 已完成 Vibe/Quote HTTP 200 与 Canvas POST 200，但 90 秒内未观察到渲染状态变化，exit 1；没有误报成功。
 - 随后用 `launchctl kickstart -k` 验证第二次后台运行：Canvas POST HTTP 200、渲染状态变化、图片下载 HTTP 200，最终 exit 0。
 - 后台渲染图为 296×152 黑白、墨点覆盖 7.9%、边缘墨点 0；日志写入 `artifacts/launchd.stdout.log` 与 `artifacts/launchd.stderr.log`，日志不含密钥。
+
+## 设备休眠误判修复（进行中，等待唤醒后最终真机复验）
+
+- 当前验收复现：launchd 已加载、`runs=6`、`last exit code=1`；真实 `npm run doctor` 在设备明确休眠时仍 exit 0，并输出“设备状态与 renderInfo 响应校验通过”，与用户报告一致。
+- 脱敏真实 `/status` 证据：HTTP 200；顶层同时存在 `status/renderInfo`；`status.current="休眠中"`，`status.description` 明确说明设备为节省电量休眠；`renderInfo.last/current` 仍存在。因此根因是客户端只校验渲染结构，没有判断设备可用性。
+- Quote 官方设备状态文档的可用示例为 `status.current="Power Active"`、说明包含 `ready to use`；响应 schema 明确 `status.current/description` 为设备状态字段。
+- 先新增 3 个正确边界的回归测试，修复前定向测试为 10/13 通过、3 失败：`doctor` 休眠时仍 exit 0、状态客户端不拒绝休眠、`push` 休眠时仍进入 POST/轮询路径。
+- 修复集中在 `src/quote.js`：`/status` 现在必须同时验证 `status.current/description` 与 `renderInfo`；休眠、离线、关机立即以不可重试错误失败；未知状态 fail-closed；`pushCanvasAndWait` 因初始状态检查位于 POST 前，不会向休眠设备发送 Canvas。
+- 修复后定向测试为 15/15 通过、0 skipped/todo；新增断言同时证明休眠状态不重试、Canvas POST 次数为 0、CLI `doctor` 非零退出且不输出成功文案，并防止 `not ready to use` 被正向子串误放行。
+- README 已补充休眠/未知状态行为、launchd 下周期重试和唤醒排障说明。
+- 全量 `npm run build` exit 0，语法检查 11 个 JavaScript 文件；`npm test` 38/38 通过，0 fail/cancelled/skipped/todo；`npm run security-check` exit 0，扫描 28 个文本文件，白名单外路径 0、真实密钥命中 0。
+- 修复后真实休眠 `npm run doctor` exit 1：Vibe 1/7 日、Quote 任务与状态均 HTTP 200，随后明确报告“Quote 设备休眠中”，不再输出成功文案。
+- 修复后真实休眠 `npm run push` exit 1：同样在 `/status` 后立即报告休眠；本次输出没有 `Quote Canvas 推送` 阶段。
+- 手动 `launchctl kickstart -k` 后，launchd 为 `runs=7`、`last exit code=1`；本次新增日志明确为休眠失败，`canvas_post_stage_present=false`、`sleep_failure_present=true`。后台自动更新仍已安装并会按 1800 秒周期重试。
+- 当前结论：休眠误判和无效 Canvas POST 已修复；设备仍休眠，因此唤醒后的 Canvas 2xx、90 秒内新渲染、最新 296×152 图片与 launchd exit 0 仍是唯一外部待验收项。

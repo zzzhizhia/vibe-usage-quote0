@@ -17,10 +17,10 @@ function close(server) {
   return new Promise((resolveClose, reject) => server.close((error) => (error ? reject(error) : resolveClose())));
 }
 
-function runChild(baseUrl) {
+function runChild(baseUrl, command = 'push') {
   return new Promise((resolveChild) => {
     const fakeHome = mkdtempSync(join(tmpdir(), 'vibe-quote0-test-'));
-    const child = spawn(process.execPath, ['src/index.js', 'push'], {
+    const child = spawn(process.execPath, ['src/index.js', command], {
       cwd: projectRoot,
       env: {
         ...process.env,
@@ -60,7 +60,10 @@ async function failureScenario(kind) {
       return;
     }
     if (request.url.endsWith('/status')) {
-      response.end(JSON.stringify({ renderInfo: { last: 'old', current: { image: null } } }));
+      response.end(JSON.stringify({
+        status: { current: 'Power Active', description: 'The device is power active and ready to use' },
+        renderInfo: { last: 'old', current: { image: null } },
+      }));
       return;
     }
     if (request.url.endsWith('/canvas') && kind === '500') {
@@ -78,6 +81,39 @@ async function failureScenario(kind) {
     await close(server);
   }
 }
+
+test('CLI doctor 在设备休眠时非零退出且不误报可用', async () => {
+  const server = createServer((request, response) => {
+    response.setHeader('content-type', 'application/json');
+    if (request.url.startsWith('/api/usage')) {
+      response.end(JSON.stringify(request.url.includes('days=1') ? todayUsage : weekUsage));
+      return;
+    }
+    if (request.url.endsWith('/loop/list')) {
+      response.end(JSON.stringify({ tasks: [{ taskKey: 'canvas-1', type: 'CANVAS_API' }] }));
+      return;
+    }
+    if (request.url.endsWith('/status')) {
+      response.end(JSON.stringify({
+        status: { current: '休眠中', description: '设备休眠中以节省电量' },
+        renderInfo: { last: 'old', current: { image: null } },
+      }));
+      return;
+    }
+    response.statusCode = 500;
+    response.end('{}');
+  });
+  const address = await listen(server);
+  try {
+    const result = await runChild(`http://127.0.0.1:${address.port}`, 'doctor');
+    assert.notEqual(result.code, 0);
+    assert.match(result.stderr, /设备休眠/);
+    assert.doesNotMatch(result.stdout, /响应校验通过|已找到/);
+    assert.doesNotMatch(result.stderr, /vibe-test-key|quote-test-key/);
+  } finally {
+    await close(server);
+  }
+});
 
 for (const kind of ['missing-canvas', '401', '500']) {
   test(`CLI push 模拟 ${kind} 时非零退出且不误报成功`, async () => {
