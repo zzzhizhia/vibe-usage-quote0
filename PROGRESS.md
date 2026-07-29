@@ -261,3 +261,12 @@
 - 真实 `npm run dry-run` exit 0：Vibe 1/7 日均 HTTP 200；当次今日 `64,702,170 tokens / $63.298567 / 7 sessions / 119,861 activeSeconds`，近 7 日 `675,270,675 tokens / $535.485851`，payload 不含项目名或秘密。
 - 第一次真实推送 Canvas POST HTTP 200，但 90 秒内渲染未变化，未误报成功；设备随后仍通过 `doctor` 可用检查。第二次推送 exit 0：Canvas POST HTTP 200、渲染状态变化、图片下载 HTTP 200。
 - 最新真机图为 `296×152`、黑白、墨点覆盖 `8.9%`、边缘墨点 0；实际查看显示今日 `6470万`、近 7 日 `6.8亿`，费用、会话、活跃时长和主力行均无重叠、截断或越界。
+
+## 缓存 Token 口径的最终后台验收（完成）
+
+- 用户恢复设备后，真实 `npm run doctor` exit 0：Vibe 1/7 日 HTTP 200、唯一 `CANVAS_API`、Quote 设备状态与 `renderInfo` 校验全部通过。
+- 真实 `npm run push` exit 0：Canvas POST HTTP 200、渲染状态变化、渲染图下载 HTTP 200；图片为 296×152 黑白、墨点覆盖 8.7%、边缘墨点 0。
+- 实际查看手动推送画面：更新时间 `07-29 18:18`，今日 `5370万`、近 7 日 `6.8亿`，费用、会话、活跃时长与主力行均清晰，无重叠、截断或越界。
+- 手动推送完成后再次运行 `doctor` exit 0，再执行 `launchctl kickstart -k gui/501/com.vibeusage.vibe-usage-quote0`；后台第 38 次运行自然退出，`last exit code=0`。
+- launchd 日志证明后台 Canvas POST HTTP 200、渲染状态变化、图片下载 HTTP 200；最终图片写入时间为 `2026-07-29 18:19:07`，自动检查仍为 296×152 黑白、墨点覆盖 8.7%、边缘墨点 0，实际查看通过。
+- 当前功能终验全部通过；launchd 保持每 1800 秒运行。Git 状态仍为 `main` 比 `origin/main` 领先 1 个提交，最新真机图与本节进度记录尚未提交或推送。
