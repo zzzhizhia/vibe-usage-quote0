@@ -288,4 +288,4 @@
 - npm 注册表实时返回 `name=vibe-usage-quote0`、`version=0.1.0`、`dist-tags.latest=0.1.0`、Node `>=20`、MIT、正确 bin 与 GitHub repository，并提供公开 tarball 与 integrity。
 - 在新的临时目录执行 `npm install --ignore-scripts --prefix <temp> vibe-usage-quote0@0.1.0` 成功；从该安装目录运行 `node_modules/.bin/vibe-usage-quote0 --help` exit 0，证明注册表 tarball 与 bin 可用。临时目录已清理。
 - 没有创建或推送 `v0.1.0` tag，避免 tag 工作流对已手工发布的同版本重复发布；未来版本在 npm 配置 Trusted Publishing 后再通过 tag 发布。
-- npm 包设置页在内置浏览器和 Chrome 中均要求重新登录，因此 Trusted Publishing 尚未配置；未索取、读取或代填 npm 密码/验证码。
+- 用户完成 npm 网页登录与配置后，已在 Chrome 中只读核对 Trusted Publisher：仓库为 `zzzhizhia/vibe-usage-quote0`，工作流为 `publish.yml`，权限包含 `npm publish` 与 `npm stage publish`。未来版本可在版本确认后通过 `v*` tag 触发 OIDC 发布。
