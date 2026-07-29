@@ -281,3 +281,11 @@
 - `pnpm build` exit 0；`pnpm test` 44/44、0 skipped/todo；`pnpm security-check` 白名单外路径 0、真实密钥命中 0；launchd plist lint 通过。
 - `src/index.js` 为 0755 且带 shebang；临时 symlink 执行 `--help` 成功。`pnpm add -g .` 成功，PATH 上的 `vibe-usage-quote0 --help` 与真实 `doctor` 均 exit 0。
 - `pnpm pack --dry-run` 与 `npm pack --dry-run --json` 均通过；尚未运行任何 publish 命令，也未创建或推送 tag，等待用户确认 `vibe-usage-quote0@0.1.0` 的不可逆发布。
+
+## npm 0.1.0 首发与目的端验证（完成）
+
+- 用户明确确认发布后执行 `pnpm publish --access public` exit 0；发布前生命周期再次通过构建、44/44 测试与安全扫描，npm 返回 `Published package vibe-usage-quote0@0.1.0`。
+- npm 注册表实时返回 `name=vibe-usage-quote0`、`version=0.1.0`、`dist-tags.latest=0.1.0`、Node `>=20`、MIT、正确 bin 与 GitHub repository，并提供公开 tarball 与 integrity。
+- 在新的临时目录执行 `npm install --ignore-scripts --prefix <temp> vibe-usage-quote0@0.1.0` 成功；从该安装目录运行 `node_modules/.bin/vibe-usage-quote0 --help` exit 0，证明注册表 tarball 与 bin 可用。临时目录已清理。
+- 没有创建或推送 `v0.1.0` tag，避免 tag 工作流对已手工发布的同版本重复发布；未来版本在 npm 配置 Trusted Publishing 后再通过 tag 发布。
+- npm 包设置页在内置浏览器和 Chrome 中均要求重新登录，因此 Trusted Publishing 尚未配置；未索取、读取或代填 npm 密码/验证码。
