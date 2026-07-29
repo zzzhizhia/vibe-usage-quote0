@@ -23,6 +23,11 @@ export function quoteConfigPath(env = process.env) {
   return join(root, 'vibe-usage-quote0', 'config.json');
 }
 
+export function dataDirectory(env = process.env) {
+  const root = env.XDG_DATA_HOME || join(homedir(), '.local', 'share');
+  return join(root, 'vibe-usage-quote0');
+}
+
 export function fileMode(path) {
   if (!existsSync(path)) return null;
   return statSync(path).mode & 0o777;

@@ -6,19 +6,19 @@
   <string>com.vibeusage.vibe-usage-quote0</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/zzzhizhi/.local/share/fnm/node-versions/v24.14.0/installation/bin/node</string>
-    <string>/Users/zzzhizhi/Developer/zzzhizhia/vibe-usage-quote0/src/index.js</string>
+    <string>__NODE_PATH__</string>
+    <string>__CLI_PATH__</string>
     <string>push</string>
   </array>
   <key>WorkingDirectory</key>
-  <string>/Users/zzzhizhi/Developer/zzzhizhia/vibe-usage-quote0</string>
+  <string>__WORKING_DIRECTORY__</string>
   <key>StartInterval</key>
   <integer>1800</integer>
   <key>RunAtLoad</key>
   <true/>
   <key>StandardOutPath</key>
-  <string>/Users/zzzhizhi/Developer/zzzhizhia/vibe-usage-quote0/artifacts/launchd.stdout.log</string>
+  <string>__STDOUT_PATH__</string>
   <key>StandardErrorPath</key>
-  <string>/Users/zzzhizhi/Developer/zzzhizhia/vibe-usage-quote0/artifacts/launchd.stderr.log</string>
+  <string>__STDERR_PATH__</string>
 </dict>
 </plist>

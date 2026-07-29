@@ -1,4 +1,5 @@
 node_modules/
+*.tgz
 artifacts/*.log
 artifacts/*.png
 !artifacts/quote0-render.png

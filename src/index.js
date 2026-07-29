@@ -4,7 +4,7 @@ import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { aggregateUsage } from './aggregate.js';
 import { buildCanvasPayload, validateCanvasPayload } from './canvas.js';
-import { loadQuoteConfig, loadVibeConfig } from './config.js';
+import { dataDirectory, loadQuoteConfig, loadVibeConfig } from './config.js';
 import { formatRequestLog, maskIdentifier } from './http.js';
 import { inspectPng } from './png.js';
 import { getCanvasStatus, listDeviceTasks, pushCanvasAndWait, selectCanvasTask } from './quote.js';
@@ -64,9 +64,8 @@ async function downloadRender(url, options) {
   if (!response.ok) throw new Error(`Quote 渲染图下载返回 HTTP ${response.status}`);
   const buffer = Buffer.from(await response.arrayBuffer());
   const inspection = inspectPng(buffer);
-  const artifactsDir = join(options.cwd, 'artifacts');
-  mkdirSync(artifactsDir, { recursive: true });
-  const path = join(artifactsDir, 'quote0-render.png');
+  mkdirSync(options.dataDirectory, { recursive: true });
+  const path = join(options.dataDirectory, 'quote0-render.png');
   writeFileSync(path, buffer, { mode: 0o600 });
   return { path, inspection };
 }
@@ -83,6 +82,7 @@ export async function runCli(argv = process.argv.slice(2), options = {}) {
     fetchImpl: options.fetchImpl,
     retryOptions: options.retryOptions,
     cwd: options.cwd ?? process.cwd(),
+    dataDirectory: options.dataDirectory ?? dataDirectory(env),
   };
 
   if (command === 'help' || command === '--help' || command === '-h') {

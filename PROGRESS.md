@@ -270,3 +270,14 @@
 - 手动推送完成后再次运行 `doctor` exit 0，再执行 `launchctl kickstart -k gui/501/com.vibeusage.vibe-usage-quote0`；后台第 38 次运行自然退出，`last exit code=0`。
 - launchd 日志证明后台 Canvas POST HTTP 200、渲染状态变化、图片下载 HTTP 200；最终图片写入时间为 `2026-07-29 18:19:07`，自动检查仍为 296×152 黑白、墨点覆盖 8.7%、边缘墨点 0，实际查看通过。
 - 当前功能终验全部通过；launchd 保持每 1800 秒运行。Git 状态仍为 `main` 比 `origin/main` 领先 1 个提交，最新真机图与本节进度记录尚未提交或推送。
+
+## npm 0.1.0 首发准备（完成，等待不可逆确认）
+
+- npm 包名 `vibe-usage-quote0` 实时查询为 404，当前可注册；npm 登录用户为 `zzzhizhia`，注册表为官方 `https://registry.npmjs.org/`。
+- 移除 `private` 发布阻塞，补齐 MIT license、author、keywords、repository、homepage、bugs、公开发布配置与 `files` 白名单；开发包管理声明切换为 `pnpm@11.15.0`，保留零运行时依赖 JavaScript 实现。
+- tarball 只包含 README、LICENSE、package.json、9 个运行源码和 1 个可配置 launchd 模板，共 13 个文件；约 16.9 KB，不含测试、进度、审计、真机图、日志、凭据或本机绝对路径。
+- launchd 模板改为占位符；README 提供 `plutil` 生成本机 plist 的命令。渲染图运行路径改为 `${XDG_DATA_HOME:-~/.local/share}/vibe-usage-quote0/quote0-render.png`。
+- 新增 tag 触发的 npm OIDC 发布工作流；使用实时核对过的 `actions/checkout@v7`、`actions/setup-node@v7`、`pnpm/action-setup@v6`，首发仍按规则在本机手工执行。
+- `pnpm build` exit 0；`pnpm test` 44/44、0 skipped/todo；`pnpm security-check` 白名单外路径 0、真实密钥命中 0；launchd plist lint 通过。
+- `src/index.js` 为 0755 且带 shebang；临时 symlink 执行 `--help` 成功。`pnpm add -g .` 成功，PATH 上的 `vibe-usage-quote0 --help` 与真实 `doctor` 均 exit 0。
+- `pnpm pack --dry-run` 与 `npm pack --dry-run --json` 均通过；尚未运行任何 publish 命令，也未创建或推送 tag，等待用户确认 `vibe-usage-quote0@0.1.0` 的不可逆发布。

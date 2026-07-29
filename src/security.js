@@ -3,13 +3,15 @@ import { join, relative, sep } from 'node:path';
 
 const ALLOWED_FILES = new Set([
   'package.json',
+  'pnpm-lock.yaml',
   '.gitignore',
+  'LICENSE',
   'README.md',
   'PROGRESS.md',
   'BLOCKED.md',
 ]);
-const ALLOWED_DIRECTORIES = new Set(['src', 'test', 'scripts', 'launchd', 'artifacts']);
-const IGNORED_DIRECTORIES = new Set(['.git']);
+const ALLOWED_DIRECTORIES = new Set(['.github', 'src', 'test', 'scripts', 'launchd', 'artifacts']);
+const IGNORED_DIRECTORIES = new Set(['.git', 'node_modules']);
 
 function projectFiles(path, root = path) {
   if (!existsSync(path)) return [];

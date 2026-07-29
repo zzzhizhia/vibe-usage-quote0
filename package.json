@@ -3,20 +3,44 @@
   "version": "0.1.0",
   "description": "将 Vibe Usage 云端 AI 编码用量推送到 Quote/0 画板。",
   "type": "module",
-  "private": true,
+  "license": "MIT",
+  "author": "zzzhizhia",
+  "keywords": [
+    "quote0",
+    "vibe-usage",
+    "ai-usage",
+    "canvas",
+    "cli"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zzzhizhia/vibe-usage-quote0.git"
+  },
+  "homepage": "https://github.com/zzzhizhia/vibe-usage-quote0#readme",
+  "bugs": {
+    "url": "https://github.com/zzzhizhia/vibe-usage-quote0/issues"
+  },
   "bin": {
     "vibe-usage-quote0": "./src/index.js"
   },
+  "files": [
+    "src",
+    "launchd"
+  ],
   "scripts": {
     "build": "node scripts/check-build.js",
     "test": "node --test test/*.test.js",
     "security-check": "node scripts/check-secrets.js",
     "doctor": "node src/index.js doctor",
     "dry-run": "node src/index.js dry-run",
-    "push": "node src/index.js push"
+    "push": "node src/index.js push",
+    "prepublishOnly": "pnpm run build && pnpm test && pnpm run security-check"
   },
   "engines": {
     "node": ">=20"
   },
-  "packageManager": "npm@11.12.1"
+  "packageManager": "pnpm@11.15.0",
+  "publishConfig": {
+    "access": "public"
+  }
 }

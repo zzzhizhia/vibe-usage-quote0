@@ -20,6 +20,9 @@ test('安全扫描覆盖白名单外文件并同时识别真实秘密值', (t) =
 
 test('路径白名单只接受明确文件与允许目录', () => {
   assert.equal(isAllowedProjectPath('README.md'), true);
+  assert.equal(isAllowedProjectPath('LICENSE'), true);
+  assert.equal(isAllowedProjectPath('pnpm-lock.yaml'), true);
+  assert.equal(isAllowedProjectPath(join('.github', 'workflows', 'publish.yml')), true);
   assert.equal(isAllowedProjectPath(join('artifacts', 'quote0-render.png')), true);
   assert.equal(isAllowedProjectPath('q'), false);
   assert.equal(isAllowedProjectPath(join('node_modules', 'package.json')), false);
