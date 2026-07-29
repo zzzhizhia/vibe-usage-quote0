@@ -229,3 +229,11 @@
 - 最终全量门禁：`npm run build` exit 0；`npm test` 40/40、0 fail/cancelled/skipped/todo；`npm run security-check` 扫描 28 个文本文件，白名单外路径 0、真实密钥命中 0。
 - 最后一次真实 `npm run push`：Vibe 1/7 日、Quote 任务/状态、初始与全部轮询图片指纹均 HTTP 200，Canvas POST HTTP 200；但 90 秒内 `renderInfo.last`、图片 URL 与图片 SHA-256 全部未变化，exit 1。
 - 同一真机验收已连续失败超过 3 次；按任务规则停止继续推送，避免无意义重复。剩余操作必须发生在设备/Dot. App 侧：对 `Vibe Usage` 使用“立即显示”，或重新连接电源/重启设备，然后再发起新一轮验收。
+
+## Dot. App“立即显示”后的真机确认（部分通过）
+
+- 用户要求再次重试时，真实 `npm run doctor` exit 1：Vibe 1/7 日、Quote 任务和状态均 HTTP 200，但设备已重新进入“休眠中”；程序正确在 Canvas POST 前停止，没有无效推送。
+- 状态已从先前 `renderInfo.last="07-29 12:57"` 推进到 `07-29 14:25`，证明用户在 Dot. App 的“立即显示”操作触发了设备新渲染。
+- 只读下载当前状态图并实际查看：画板为 `VIBE USAGE`，画面更新时间 `07-29 14:04`；今日 Token、近 7 日 Token、费用、会话、活跃时长和主力工具/模型均清晰可见，无重叠、截断或越界。
+- PNG 自动检查：`296×152`、`blackAndWhite=true`、`inkCoverage=8.384%`、`edgeInkPixels=0`、墨点边界 `(6,11)-(288,145)`。
+- 结论更新：Canvas POST 内容和设备手动消费能力已真实确认；当前唯一剩余项是设备在电池模式很快休眠，导致 launchd 运行时 fail-closed。稳定自动刷新需要设备持续接入电源和网络后再验收 `push` 与 launchd exit 0。

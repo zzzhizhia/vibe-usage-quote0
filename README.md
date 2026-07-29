@@ -70,6 +70,8 @@ npm run push
 
 launchd 通常不继承交互式 shell 的环境变量，因此计划任务建议使用上面的 `0600` Quote 配置文件。安装前请先手动运行 `doctor` 和 `push`。
 
+稳定的 30 分钟自动刷新要求 Quote/0 持续接入电源和网络。设备使用电池进入休眠时，程序会在 Canvas POST 前 fail-closed；launchd 会在下个周期重试，但如果设备每次运行时都处于休眠，画板不会自动更新。
+
 安装模板：
 
 ```bash
