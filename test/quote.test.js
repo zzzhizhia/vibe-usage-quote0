@@ -56,6 +56,118 @@ test('当前渲染图 URL 变化也可证明新渲染', () => {
   assert.equal(renderChanged(before, after), true);
 });
 
+test('渲染图 URL 不变但图片内容变化也可证明新渲染', async () => {
+  let pushed = false;
+  let imageGets = 0;
+  const imageAuthorizations = [];
+  let baseUrl;
+  const server = createServer((request, response) => {
+    if (request.url.endsWith('/loop/list')) {
+      response.setHeader('content-type', 'application/json');
+      response.end(JSON.stringify({ tasks: [{ taskKey: 'canvas-1', type: 'CANVAS_API' }] }));
+      return;
+    }
+    if (request.url.endsWith('/status')) {
+      response.setHeader('content-type', 'application/json');
+      response.end(JSON.stringify({
+        status: { current: 'Power Active', description: 'The device is power active and ready to use' },
+        renderInfo: { last: 'same', current: { image: [`${baseUrl}/render.png`] } },
+      }));
+      return;
+    }
+    if (request.url.endsWith('/canvas')) {
+      pushed = true;
+      response.setHeader('content-type', 'application/json');
+      response.end(JSON.stringify({ message: 'ok' }));
+      return;
+    }
+    if (request.url.endsWith('/render.png')) {
+      imageGets += 1;
+      imageAuthorizations.push(request.headers.authorization);
+      response.setHeader('content-type', 'image/png');
+      response.end(pushed ? 'new-render-bytes' : 'old-render-bytes');
+      return;
+    }
+    response.statusCode = 404;
+    response.end('{}');
+  });
+  const address = await listen(server);
+  baseUrl = `http://127.0.0.1:${address.port}`;
+  try {
+    const result = await pushCanvasAndWait(
+      { apiUrl: baseUrl, apiKey: 'quote-test-key', deviceId: 'DEVICE-1234' },
+      { taskAlias: 'Vibe Usage', data: {}, windowData: { default: [] } },
+      { timeoutMs: 50, pollIntervalMs: 1, retryOptions: { baseDelayMs: 1 } },
+    );
+    assert.equal(result.changed, true);
+    assert.equal(result.renderImageUrl, `${baseUrl}/render.png`);
+    assert.ok(imageGets >= 2);
+    assert.ok(imageAuthorizations.every((value) => value === undefined));
+  } finally {
+    await close(server);
+  }
+});
+
+test('渲染图指纹网络错误会退避重试且不携带 Quote 鉴权', async () => {
+  let pushed = false;
+  let baseUrl;
+  let renderFetchAttempts = 0;
+  const renderAuthorizations = [];
+  const server = createServer((request, response) => {
+    response.setHeader('content-type', 'application/json');
+    if (request.url.endsWith('/loop/list')) {
+      response.end(JSON.stringify({ tasks: [{ taskKey: 'canvas-1', type: 'CANVAS_API' }] }));
+      return;
+    }
+    if (request.url.endsWith('/status')) {
+      response.end(JSON.stringify({
+        status: { current: 'Power Active', description: 'The device is power active and ready to use' },
+        renderInfo: { last: pushed ? 'new' : 'old', current: { image: [`${baseUrl}/render.png`] } },
+      }));
+      return;
+    }
+    if (request.url.endsWith('/canvas')) {
+      pushed = true;
+      response.end(JSON.stringify({ message: 'ok' }));
+      return;
+    }
+    if (request.url.endsWith('/render.png')) {
+      renderAuthorizations.push(request.headers.authorization);
+      response.setHeader('content-type', 'image/png');
+      response.end('render-bytes');
+      return;
+    }
+    response.statusCode = 404;
+    response.end('{}');
+  });
+  const address = await listen(server);
+  baseUrl = `http://127.0.0.1:${address.port}`;
+  const fetchImpl = async (url, options) => {
+    if (String(url).endsWith('/render.png')) {
+      renderFetchAttempts += 1;
+      if (renderFetchAttempts === 1) throw new TypeError('simulated render network failure');
+    }
+    return fetch(url, options);
+  };
+  try {
+    const result = await pushCanvasAndWait(
+      { apiUrl: baseUrl, apiKey: 'quote-test-key', deviceId: 'DEVICE-1234' },
+      { taskAlias: 'Vibe Usage', data: {}, windowData: { default: [] } },
+      {
+        fetchImpl,
+        timeoutMs: 50,
+        pollIntervalMs: 1,
+        retryOptions: { baseDelayMs: 1 },
+      },
+    );
+    assert.equal(result.changed, true);
+    assert.ok(renderFetchAttempts >= 3);
+    assert.ok(renderAuthorizations.every((value) => value === undefined));
+  } finally {
+    await close(server);
+  }
+});
+
 test('Quote 状态明确为休眠时拒绝误报设备可用', async () => {
   let calls = 0;
   const fetchImpl = async () => {

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { InvalidResponseError, requestJson } from './http.js';
 
 export class DeviceUnavailableError extends InvalidResponseError {
@@ -121,7 +122,55 @@ export function snapshotCanvasTask(task) {
 
 export function renderChanged(before, after) {
   if (after.last !== JSON.stringify(null) && after.last !== before.last) return true;
-  return JSON.stringify(after.imageUrls) !== JSON.stringify(before.imageUrls);
+  if (JSON.stringify(after.imageUrls) !== JSON.stringify(before.imageUrls)) return true;
+  return JSON.stringify(after.imageFingerprints ?? []) !== JSON.stringify(before.imageFingerprints ?? []);
+}
+
+async function fetchRenderFingerprint(url, options = {}) {
+  if (!/^https?:\/\//i.test(url)) throw new InvalidResponseError('Quote 渲染图 URL 非 http(s)');
+  const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+  const logger = options.logger ?? (() => {});
+  const retryOptions = options.retryOptions ?? {};
+  const retries = retryOptions.retries ?? 3;
+  const baseDelayMs = retryOptions.baseDelayMs ?? 100;
+  const delay = retryOptions.delay ?? defaultDelay;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    logger({ phase: 'request', stage: 'Quote 渲染图指纹', attempt: attempt + 1, identifier: '***' });
+    try {
+      const response = await fetchImpl(url, {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(options.imageTimeoutMs ?? 15_000),
+      });
+      logger({ phase: 'status', stage: 'Quote 渲染图指纹', status: response.status, identifier: '***' });
+      if (!response.ok) {
+        const error = new Error(`Quote 渲染图指纹返回 HTTP ${response.status}`);
+        error.statusCode = response.status;
+        throw error;
+      }
+      const bytes = Buffer.from(await response.arrayBuffer());
+      if (bytes.length > 5 * 1024 * 1024) throw new InvalidResponseError('Quote 渲染图超过 5 MiB');
+      return createHash('sha256').update(bytes).digest('hex');
+    } catch (error) {
+      const status = error?.statusCode;
+      const retryable =
+        !(error instanceof InvalidResponseError) &&
+        (status === 429 || (status !== undefined && status >= 500) || status === undefined);
+      if (!retryable || attempt >= retries) throw error;
+      await delay(baseDelayMs * 2 ** attempt);
+    }
+  }
+  throw new Error('Quote 渲染图指纹请求失败');
+}
+
+async function snapshotCanvasStatus(data, options = {}) {
+  const snapshot = snapshotCanvasTask(data);
+  if (!options.includeImageFingerprints || snapshot.imageUrls.length === 0) return snapshot;
+  const imageFingerprints = await Promise.all(snapshot.imageUrls.map(async (url) => ({
+    url,
+    sha256: await fetchRenderFingerprint(url, options),
+  })));
+  return { ...snapshot, imageFingerprints };
 }
 
 function endpoint(apiUrl, deviceId, suffix) {
@@ -156,7 +205,7 @@ export async function getCanvasStatus(config, options = {}) {
     },
     ...options.retryOptions,
   });
-  return { ...result, snapshot: snapshotCanvasTask(result.data) };
+  return { ...result, snapshot: await snapshotCanvasStatus(result.data, options) };
 }
 
 export async function postCanvas(config, payload, taskKey, options = {}) {
@@ -183,13 +232,14 @@ export async function pushCanvasAndWait(config, payload, options = {}) {
   const tasks = await listDeviceTasks(config, options);
   const task = selectCanvasTask(tasks.data, config.taskKey);
   const taskKey = canvasTaskKey(task);
-  const initial = await getCanvasStatus(config, options);
+  const statusOptions = { ...options, includeImageFingerprints: true };
+  const initial = await getCanvasStatus(config, statusOptions);
   const posted = await postCanvas(config, payload, taskKey, options);
   const deadline = Date.now() + timeoutMs;
 
   while (Date.now() < deadline) {
     await delay(Math.min(pollIntervalMs, Math.max(0, deadline - Date.now())));
-    const current = await getCanvasStatus(config, options);
+    const current = await getCanvasStatus(config, statusOptions);
     if (renderChanged(initial.snapshot, current.snapshot)) {
       const newImage = current.snapshot.imageUrls.find((url) => !initial.snapshot.imageUrls.includes(url));
       return {

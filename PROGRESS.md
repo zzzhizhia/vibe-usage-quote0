@@ -212,3 +212,20 @@
 - 修复后真实休眠 `npm run push` exit 1：同样在 `/status` 后立即报告休眠；本次输出没有 `Quote Canvas 推送` 阶段。
 - 手动 `launchctl kickstart -k` 后，launchd 为 `runs=7`、`last exit code=1`；本次新增日志明确为休眠失败，`canvas_post_stage_present=false`、`sleep_failure_present=true`。后台自动更新仍已安装并会按 1800 秒周期重试。
 - 当前结论：休眠误判和无效 Canvas POST 已修复；设备仍休眠，因此唤醒后的 Canvas 2xx、90 秒内新渲染、最新 296×152 图片与 launchd exit 0 仍是唯一外部待验收项。
+
+## 设备唤醒后真机重试（未通过，设备循环执行侧阻塞）
+
+- 用户唤醒设备后，真实 `npm run doctor` exit 0：Vibe 1/7 日 HTTP 200、唯一 `CANVAS_API`、Quote `/status` HTTP 200；设备状态为“活跃中”。休眠识别修复有效。
+- 真实 `npm run push` 连续取得 Canvas POST HTTP 200，但两次均在 90 秒内没有观察到 `renderInfo.last` 或图片 URL 字符串变化，exit 1；launchd 第 30 次运行同样 Canvas POST 200 后超时，`last exit code=1`。
+- 脱敏只读诊断：固定内容列表 HTTP 200 且为 0 项；循环中唯一 `CANVAS_API` 的 `taskAlias="Vibe Usage"`，payload `updatedAt="07-29 13:54"`，证明 API 已保存新内容。设备为“活跃中”、电量 93%、Wi-Fi -57 dBm，但 `renderInfo.last="07-29 12:57"`，`renderInfo.next.power="07-29 13:43"` 已过期，说明设备没有消费循环更新。
+- 进一步发现状态图片 URL 会复用：远端当前 PNG 与仓库旧图 SHA-256 不同，但 URL 字符串和 `renderInfo.last` 都未变化。旧客户端只比较元数据，会把“同 URL、图片字节变化”误报为超时。
+- 先新增固定 URL、图片内容由 old→new 的本地集成回归；旧实现 11/12、exit 1，错误为“Quote 渲染状态在 0 秒内未变化”。
+- 修复在 `src/quote.js`：`push` 初始状态和每次轮询会无鉴权下载当前渲染图，最多 5 MiB，使用 SHA-256 指纹比较；不向渲染图 URL 发送 Quote key。URL、`renderInfo.last`、内容指纹任一变化即可证明新渲染。
+- 修复后定向测试 12/12；全量 `npm run build` exit 0、`npm test` 39/39 且 0 skipped/todo、`npm run security-check` 真实密钥命中 0。
+- 使用指纹版再次真实 `push`：Canvas POST HTTP 200，状态与图片指纹轮询均正常，但新的 `13:54` payload 在 90 秒内仍没有生成新图片，exit 1。因此当前失败不是检测假阴性，而是设备/循环执行侧没有及时渲染。
+- README 已补充“活跃但不渲染”的 Dot. App 立即显示、供电重连/重启和固定内容排查步骤。真机完成条件仍未满足，见 `BLOCKED.md`。
+- 指纹版 launchd 第 31 次运行在首次图片请求遇到瞬时 `fetch failed` 后直接 exit 1，暴露新指纹边界没有退避重试。
+- 再次先写回归：模拟首次渲染图网络错误，旧实现定向测试 12/13、exit 1；修复后 13/13。图片指纹现在对 429、5xx 与网络错误最多退避重试 3 次，4xx 和畸形/超大响应不重试，仍不携带 Quote 鉴权。
+- 最终全量门禁：`npm run build` exit 0；`npm test` 40/40、0 fail/cancelled/skipped/todo；`npm run security-check` 扫描 28 个文本文件，白名单外路径 0、真实密钥命中 0。
+- 最后一次真实 `npm run push`：Vibe 1/7 日、Quote 任务/状态、初始与全部轮询图片指纹均 HTTP 200，Canvas POST HTTP 200；但 90 秒内 `renderInfo.last`、图片 URL 与图片 SHA-256 全部未变化，exit 1。
+- 同一真机验收已连续失败超过 3 次；按任务规则停止继续推送，避免无意义重复。剩余操作必须发生在设备/Dot. App 侧：对 `Vibe Usage` 使用“立即显示”，或重新连接电源/重启设备，然后再发起新一轮验收。
