@@ -12,7 +12,7 @@ export function validateUsageResponse(value) {
 
   for (const [index, bucket] of value.buckets.entries()) {
     if (!isRecord(bucket)) throw new InvalidResponseError(`bucket[${index}] 必须是对象`);
-    for (const field of ['source', 'model', 'totalTokens', 'estimatedCost']) {
+    for (const field of ['source', 'model', 'totalTokens', 'cachedInputTokens', 'estimatedCost']) {
       if (!(field in bucket)) throw new InvalidResponseError(`bucket[${index}] 缺少 ${field}`);
     }
   }

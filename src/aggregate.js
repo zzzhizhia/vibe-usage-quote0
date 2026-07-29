@@ -3,6 +3,15 @@ function finiteNonNegative(value) {
   return Number.isFinite(number) && number > 0 ? number : 0;
 }
 
+function addFiniteNonNegative(total, value) {
+  const increment = finiteNonNegative(value);
+  return total >= Number.MAX_VALUE - increment ? Number.MAX_VALUE : total + increment;
+}
+
+function bucketTotalTokens(bucket) {
+  return addFiniteNonNegative(finiteNonNegative(bucket?.totalTokens), bucket?.cachedInputTokens);
+}
+
 function compactDecimal(value, decimals = 1) {
   return Number(value.toFixed(decimals)).toString();
 }
@@ -18,7 +27,7 @@ function aggregateRanking(buckets, key) {
   for (const bucket of buckets) {
     if (!bucket || typeof bucket !== 'object') continue;
     const name = truncateText(bucket[key], 24);
-    totals.set(name, (totals.get(name) ?? 0) + finiteNonNegative(bucket.totalTokens));
+    totals.set(name, addFiniteNonNegative(totals.get(name) ?? 0, bucketTotalTokens(bucket)));
   }
   return [...totals.entries()]
     .map(([name, tokens]) => ({ name, tokens }))
@@ -33,7 +42,7 @@ export function aggregateWindow(response) {
   let estimatedCost = 0;
   for (const bucket of buckets) {
     if (!bucket || typeof bucket !== 'object') continue;
-    totalTokens += finiteNonNegative(bucket.totalTokens);
+    totalTokens = addFiniteNonNegative(totalTokens, bucketTotalTokens(bucket));
     estimatedCost += finiteNonNegative(bucket.estimatedCost);
   }
   let activeSeconds = 0;

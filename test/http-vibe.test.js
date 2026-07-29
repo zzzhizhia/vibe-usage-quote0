@@ -20,6 +20,12 @@ test('Vibe bucket 必需字段缺失时失败', () => {
   assert.throws(() => validateUsageResponse(invalid), /totalTokens/);
 });
 
+test('Vibe bucket 缺少缓存 Token 字段时失败，避免静默少算', () => {
+  const invalid = structuredClone(todayUsage);
+  delete invalid.buckets[0].cachedInputTokens;
+  assert.throws(() => validateUsageResponse(invalid), /cachedInputTokens/);
+});
+
 test('HTTP 401 不重试', async () => {
   let calls = 0;
   await assert.rejects(

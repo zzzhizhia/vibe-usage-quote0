@@ -249,3 +249,15 @@
 - 等待进入下一分钟后执行 `launchctl kickstart -k`：后台第 33 次运行 `last exit code=0`，Canvas POST 200、渲染状态变化、图片下载 200；最新画面更新时间 `07-29 14:50`。
 - launchd 仍为每 1800 秒运行，模板和系统 plist 均不含秘密；最新 `artifacts/quote0-render.png` 与 README 4×示例图已同步。
 - 功能完成条件已满足：Vibe 1/7 日真实数据、Canvas 2xx、90 秒内新渲染、296×152 黑白视觉、launchd exit 0、密钥扫描 0。严格流程层面仍保留 `BLOCKED.md` 中不可撤销的历史 `|| true` 违规记录。
+
+## 总 Token 包含缓存输入 Token（完成）
+
+- 用户面板 24H 数据对照确认根因：API `totalTokens=4,470,350`、`cachedInputTokens=50,700,856`，网页总量为两者之和 `55,171,206`（`55.2M`）；旧画板只累加 `totalTokens`，因此显示 `447万`。费用、会话和活跃时长与网页一致，排除账号、窗口和刷新口径错误。
+- 固定 fixture 加入真实 `cachedInputTokens` 字段，并让缓存量改变 Top 排名；今日/7 日总览、Top 3 工具、Top 3 模型和主力提示均精确断言包含缓存后的结果。Vibe 响应缺少该字段时现在明确失败，避免静默少算。
+- 先测试后修复：定向红测为 `16/21`、5 项失败，分别命中今日/7 日总量、工具排行、模型排行、主力提示和字段校验；实现修复后定向测试 `22/22`、0 skipped/todo。
+- 聚合统一使用 `totalTokens + cachedInputTokens`；今日、近 7 日及工具/模型排行采用同一口径。极端有限 Token 使用饱和加法保持有限，不产生 `Infinity`。
+- README 明确总 Token 包含缓存输入 Token；最新真机原图与 4×示例图已同步。
+- 全量门禁：`npm run build` exit 0；`npm test` 43/43、0 fail/cancelled/skipped/todo；`npm run security-check` 为 `unexpected_path_count=0`、`actual_secret_matches=0`。
+- 真实 `npm run dry-run` exit 0：Vibe 1/7 日均 HTTP 200；当次今日 `64,702,170 tokens / $63.298567 / 7 sessions / 119,861 activeSeconds`，近 7 日 `675,270,675 tokens / $535.485851`，payload 不含项目名或秘密。
+- 第一次真实推送 Canvas POST HTTP 200，但 90 秒内渲染未变化，未误报成功；设备随后仍通过 `doctor` 可用检查。第二次推送 exit 0：Canvas POST HTTP 200、渲染状态变化、图片下载 HTTP 200。
+- 最新真机图为 `296×152`、黑白、墨点覆盖 `8.9%`、边缘墨点 0；实际查看显示今日 `6470万`、近 7 日 `6.8亿`，费用、会话、活跃时长和主力行均无重叠、截断或越界。

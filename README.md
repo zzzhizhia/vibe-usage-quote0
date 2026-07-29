@@ -1,6 +1,6 @@
 # vibe-usage-quote0
 
-把 Vibe Usage 云端的真实 AI 编码用量，稳定推送到 Quote/0 的 296×152 黑白桌面画板。画面突出今日 Token，并显示今日费用、会话数、活跃时长、近 7 日 Token/费用，以及一个主力工具和模型提示；不会发送项目名。
+把 Vibe Usage 云端的真实 AI 编码用量，稳定推送到 Quote/0 的 296×152 黑白桌面画板。画面突出今日 Token，并显示今日费用、会话数、活跃时长、近 7 日 Token/费用，以及一个主力工具和模型提示；不会发送项目名。总 Token 与网页面板口径一致，包含缓存输入 Token。
 
 ![Vibe Usage 在 Quote/0 上的用量画板示例](artifacts/quote0-render-4x.png)
 

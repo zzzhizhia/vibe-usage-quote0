@@ -24,11 +24,11 @@ test('精确聚合今日与近 7 日六项总览', () => {
       weekCost: summary.week.estimatedCost,
     },
     {
-      todayTokens: 3_500,
+      todayTokens: 13_000,
       todayCost: 0.35,
       todaySessions: 2,
       todayActiveSeconds: 2_700,
-      weekTokens: 30_000,
+      weekTokens: 51_000,
       weekCost: 3.01,
     },
   );
@@ -37,18 +37,18 @@ test('精确聚合今日与近 7 日六项总览', () => {
 test('Top 3 工具按 Token 降序且同工具合并', () => {
   const summary = aggregateUsage(todayUsage, weekUsage);
   assert.deepEqual(summary.week.topTools, [
+    { name: 'Copilot', tokens: 23_000 },
     { name: 'Claude Code', tokens: 11_000 },
-    { name: 'Cursor', tokens: 8_000 },
-    { name: 'Aider', tokens: 7_000 },
+    { name: 'Cursor', tokens: 9_000 },
   ]);
 });
 
 test('Top 3 模型按 Token 降序且同模型合并', () => {
   const summary = aggregateUsage(todayUsage, weekUsage);
   assert.deepEqual(summary.week.topModels, [
-    { name: 'sonnet', tokens: 13_000 },
+    { name: 'gpt', tokens: 23_000 },
+    { name: 'sonnet', tokens: 14_000 },
     { name: 'deepseek', tokens: 7_000 },
-    { name: 'opus', tokens: 6_000 },
   ]);
 });
 
@@ -65,8 +65,8 @@ test('空数据生成明确的暂无数据画面', () => {
 test('畸形数值不会产生 NaN、负数或 Infinity', () => {
   const malformed = {
     buckets: [
-      { source: 'X', model: 'A', totalTokens: NaN, estimatedCost: Infinity },
-      { source: 'Y', model: 'B', totalTokens: -9, estimatedCost: -3 },
+      { source: 'X', model: 'A', totalTokens: NaN, cachedInputTokens: Infinity, estimatedCost: Infinity },
+      { source: 'Y', model: 'B', totalTokens: -9, cachedInputTokens: -5, estimatedCost: -3 },
       null,
     ],
     sessions: [{ activeSeconds: -1 }, { activeSeconds: 'not-a-number' }, null],
@@ -78,6 +78,23 @@ test('畸形数值不会产生 NaN、负数或 Infinity', () => {
   assert.equal(aggregate.activeSeconds, 0);
   assert.equal(aggregate.sessionCount, 2);
   assert.doesNotMatch(serialized, /NaN|Infinity/);
+});
+
+test('总 Token 与缓存 Token 的极端累加保持有限', () => {
+  const aggregate = aggregateWindow({
+    buckets: [
+      {
+        source: 'X',
+        model: 'A',
+        totalTokens: Number.MAX_VALUE,
+        cachedInputTokens: Number.MAX_VALUE,
+        estimatedCost: 0,
+      },
+    ],
+    sessions: [],
+  });
+  assert.equal(aggregate.totalTokens, Number.MAX_VALUE);
+  assert.equal(Number.isFinite(aggregate.totalTokens), true);
 });
 
 test('Canvas 合同固定且只含白名单元素', () => {
@@ -103,7 +120,7 @@ test('Canvas 合同固定且只含白名单元素', () => {
 
 test('精简画面只保留一个主力工具与模型', () => {
   const payload = buildCanvasPayload(aggregateUsage(todayUsage, weekUsage), new Date('2026-07-28T04:00:00Z'));
-  assert.equal(payload.data.primaryUsage, 'Claude Code · sonnet');
+  assert.equal(payload.data.primaryUsage, 'Copilot · gpt');
   assert.equal(Object.keys(payload.data).filter((key) => /^tool|^model/.test(key)).length, 0);
 });
 
