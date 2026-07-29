@@ -237,3 +237,15 @@
 - 只读下载当前状态图并实际查看：画板为 `VIBE USAGE`，画面更新时间 `07-29 14:04`；今日 Token、近 7 日 Token、费用、会话、活跃时长和主力工具/模型均清晰可见，无重叠、截断或越界。
 - PNG 自动检查：`296×152`、`blackAndWhite=true`、`inkCoverage=8.384%`、`edgeInkPixels=0`、墨点边界 `(6,11)-(288,145)`。
 - 结论更新：Canvas POST 内容和设备手动消费能力已真实确认；当前唯一剩余项是设备在电池模式很快休眠，导致 launchd 运行时 fail-closed。稳定自动刷新需要设备持续接入电源和网络后再验收 `push` 与 launchd exit 0。
+
+## 持续供电后的最终真机验收（功能完成）
+
+- 用户将设备持续接入电源后，真实 `npm run doctor` exit 0：Vibe 1/7 日 HTTP 200、唯一 `CANVAS_API`、Quote 设备状态与 `renderInfo` 校验全部通过。
+- 首次真实 `push` 的 Canvas POST HTTP 200；状态立即发布新渲染图 URL，但图片短暂 HTTP 404，旧客户端直接 exit 1。根因是 Quote 状态元数据先于图片文件就绪，404 属于渲染中的短暂状态。
+- 先新增本地集成回归“新 URL 前两次 404、第三次 200”：旧实现 13/14、exit 1；修复后 14/14。图片 404 现在记录为 pending，外层状态轮询会继续；图片真正可下载前不会确认成功，90 秒持续不可用仍失败。
+- 最终全量门禁：`npm run build` exit 0，语法检查 11 个 JavaScript 文件；`npm test` 41/41、0 fail/cancelled/skipped/todo；`npm run security-check` 扫描 28 个文本文件，白名单外路径 0、真实密钥命中 0。
+- 修复后真实 `npm run push` exit 0，约 13 秒完成：Vibe 1/7 日、Quote 任务/状态/图片指纹 HTTP 200，Canvas POST HTTP 200，渲染状态变化，渲染图下载 HTTP 200。
+- 手动推送图片：296×152、黑白、墨点覆盖 8.3%、边缘墨点 0；实际查看更新时间 `07-29 14:49`，所有信息清晰，无重叠、截断或越界。
+- 等待进入下一分钟后执行 `launchctl kickstart -k`：后台第 33 次运行 `last exit code=0`，Canvas POST 200、渲染状态变化、图片下载 200；最新画面更新时间 `07-29 14:50`。
+- launchd 仍为每 1800 秒运行，模板和系统 plist 均不含秘密；最新 `artifacts/quote0-render.png` 与 README 4×示例图已同步。
+- 功能完成条件已满足：Vibe 1/7 日真实数据、Canvas 2xx、90 秒内新渲染、296×152 黑白视觉、launchd exit 0、密钥扫描 0。严格流程层面仍保留 `BLOCKED.md` 中不可撤销的历史 `|| true` 违规记录。

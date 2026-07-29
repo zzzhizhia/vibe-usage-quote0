@@ -121,6 +121,7 @@ export function snapshotCanvasTask(task) {
 }
 
 export function renderChanged(before, after) {
+  if ((after.pendingImageUrls ?? []).length > 0) return false;
   if (after.last !== JSON.stringify(null) && after.last !== before.last) return true;
   if (JSON.stringify(after.imageUrls) !== JSON.stringify(before.imageUrls)) return true;
   return JSON.stringify(after.imageFingerprints ?? []) !== JSON.stringify(before.imageFingerprints ?? []);
@@ -143,6 +144,7 @@ async function fetchRenderFingerprint(url, options = {}) {
         signal: AbortSignal.timeout(options.imageTimeoutMs ?? 15_000),
       });
       logger({ phase: 'status', stage: 'Quote 渲染图指纹', status: response.status, identifier: '***' });
+      if (response.status === 404 && options.allowPendingImage) return null;
       if (!response.ok) {
         const error = new Error(`Quote 渲染图指纹返回 HTTP ${response.status}`);
         error.statusCode = response.status;
@@ -166,11 +168,15 @@ async function fetchRenderFingerprint(url, options = {}) {
 async function snapshotCanvasStatus(data, options = {}) {
   const snapshot = snapshotCanvasTask(data);
   if (!options.includeImageFingerprints || snapshot.imageUrls.length === 0) return snapshot;
-  const imageFingerprints = await Promise.all(snapshot.imageUrls.map(async (url) => ({
+  const fingerprints = await Promise.all(snapshot.imageUrls.map(async (url) => ({
     url,
     sha256: await fetchRenderFingerprint(url, options),
   })));
-  return { ...snapshot, imageFingerprints };
+  return {
+    ...snapshot,
+    imageFingerprints: fingerprints.filter(({ sha256 }) => sha256 !== null),
+    pendingImageUrls: fingerprints.filter(({ sha256 }) => sha256 === null).map(({ url }) => url),
+  };
 }
 
 function endpoint(apiUrl, deviceId, suffix) {
@@ -232,7 +238,7 @@ export async function pushCanvasAndWait(config, payload, options = {}) {
   const tasks = await listDeviceTasks(config, options);
   const task = selectCanvasTask(tasks.data, config.taskKey);
   const taskKey = canvasTaskKey(task);
-  const statusOptions = { ...options, includeImageFingerprints: true };
+  const statusOptions = { ...options, includeImageFingerprints: true, allowPendingImage: true };
   const initial = await getCanvasStatus(config, statusOptions);
   const posted = await postCanvas(config, payload, taskKey, options);
   const deadline = Date.now() + timeoutMs;
