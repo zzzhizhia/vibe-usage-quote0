@@ -5,10 +5,11 @@
 - 用户现场确认正确 Dot `...CBC4` 的实体屏幕观感正常，物理显示验收已补齐。
 - Windows 曾对 Vibe 配置输出无意义的 Unix `0600` 警告；新增平台判断后，Windows 不再按 `stat.mode` 误警告，macOS/Linux 的宽权限提醒保持不变。
 - 目标机 Vibe 配置 ACL 已从继承 3 条允许规则收紧为禁止继承、仅当前用户 1 条规则；Quote 配置同样保持当前用户专属 ACL。
-- 最终 17 文件 tarball 两端 SHA-256 一致并覆盖全局安装；Windows `.cmd --help/doctor/dry-run/push` 均 exit 0，输出无假警告，手动渲染仍为 296x152 黑白。
+- 最终 17 文件 tarball 两端 SHA-256 一致并覆盖全局安装；Windows `.cmd --help/doctor/dry-run/push` 均 exit 0，输出无假警告，手动渲染仍为 296x152 黑白；目标机临时源码、ZIP 与 tarball 均已删除。
+- Windows 端源码归档已通过 pnpm build（11 个 JS）、test 54/54、security 35/0/0 与 17 文件 pack dry-run；Corepack 系统 pnpm shim 已启用，用户主目录 `package.json` 未遗留 Corepack 的 `packageManager` 改动，原有 `devEngines` 保持不变。
 - `VibeUsageQuote0` 连续安装两次均成功；最终为当前用户、Limited、PT30M，任务定义无凭据。
 - 未调用 `Start-ScheduledTask`：任务在自身首次计划时间自然触发，`LastTaskResult=0`，图片时间与 SHA 均变化，日志以 `command=push exit_code=0` 收尾。
-- 下一次运行时间精确为首次运行后 30 分钟；任务保持已安装，正确配置、全局 CLI、图片和日志均保留，临时 tarball将在收尾后删除。
+- 下一次运行时间精确为首次运行后 30 分钟；任务保持 `Ready`、`LastTaskResult=0`、PT30M、Limited、当前用户，正确配置、全局 CLI、图片和正式日志均保留。
 - 本地最终门禁为 build 11 JS、test 54/54、security 37/0/0、launchd lint 与 diff check 全绿；未改版本/tag，未推送或发布。
 
 ## Windows 真实目的端续做（2026-07-30，完成）
