@@ -24,6 +24,21 @@ test('路径白名单只接受明确文件与允许目录', () => {
   assert.equal(isAllowedProjectPath('pnpm-lock.yaml'), true);
   assert.equal(isAllowedProjectPath(join('.github', 'workflows', 'publish.yml')), true);
   assert.equal(isAllowedProjectPath(join('artifacts', 'quote0-render.png')), true);
+  assert.equal(isAllowedProjectPath(join('windows', 'install.ps1')), true);
   assert.equal(isAllowedProjectPath('q'), false);
   assert.equal(isAllowedProjectPath(join('node_modules', 'package.json')), false);
+});
+
+test('安全扫描覆盖 Windows 脚本且识别其中秘密值', (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'vibe-quote0-windows-security-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  mkdirSync(join(root, 'windows'));
+  writeFileSync(join(root, 'package.json'), '{}');
+  writeFileSync(join(root, 'windows', 'run.ps1'), 'scheduler-test-secret');
+
+  const result = scanProject(root, ['scheduler-test-secret']);
+
+  assert.equal(result.scanned, 2);
+  assert.equal(result.secretMatches, 1);
+  assert.deepEqual(result.unexpectedPaths, []);
 });

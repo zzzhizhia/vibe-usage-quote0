@@ -25,7 +25,8 @@
   },
   "files": [
     "src",
-    "launchd"
+    "launchd",
+    "windows"
   ],
   "scripts": {
     "build": "node scripts/check-build.js",

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
@@ -123,3 +123,26 @@ for (const kind of ['missing-canvas', '401', '500']) {
     assert.doesNotMatch(result.stderr, /vibe-test-key|quote-test-key/);
   });
 }
+
+test('Windows 运行器合同保留失败码且不记录子进程输出', () => {
+  const runner = readFileSync(join(projectRoot, 'windows', 'run.ps1'), 'utf8');
+
+  assert.match(runner, /Get-CommandPath/);
+  assert.match(runner, /exit \$exitCode/);
+  assert.doesNotMatch(runner, /\bnpx\b/i);
+  assert.doesNotMatch(runner, /Add-Content[^\n]*(output|stdout|stderr)/i);
+});
+
+test('Windows 安装与卸载合同限定当前用户任务', () => {
+  const installer = readFileSync(join(projectRoot, 'windows', 'install.ps1'), 'utf8');
+  const uninstaller = readFileSync(join(projectRoot, 'windows', 'uninstall.ps1'), 'utf8');
+
+  assert.ok(installer.indexOf('& $resolvedCli doctor') < installer.indexOf('Register-ScheduledTask'));
+  assert.match(installer, /New-TimeSpan -Seconds 1800/);
+  assert.match(installer, /-LogonType Interactive/);
+  assert.match(installer, /-RunLevel Limited/);
+  assert.match(installer, /-NodePath .* -CliPath/);
+  assert.doesNotMatch(installer, /\bnpx\b|apiKey|deviceId/i);
+  assert.match(uninstaller, /Unregister-ScheduledTask -TaskName \$script:VibeUsageTaskName/);
+  assert.doesNotMatch(uninstaller, /Remove-Item|\bnpx\b/i);
+});

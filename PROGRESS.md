@@ -1,5 +1,41 @@
 # PROGRESS
 
+## Windows 适配工作轮 1/6：任务 0（完成）
+- 目标：Windows 10/11、PowerShell 5.1+、Node 20+ 支持全局 CLI 与当前用户每 1800 秒刷新，macOS 行为不回退。
+- 顺序：基线与阻塞 -> 测试先行 -> 配置/安全 -> Windows 调度 -> 打包/README/CI -> 本地终验。
+- 基线：`pnpm build` 11 个 JS；`pnpm test` 44/44，fail/skip/todo=0；`pnpm security-check` 32/0/0。
+- 基线：launchd plist lint `OK`；tarball 13 文件且仅含 `src`/`launchd` 交付目录；Git `main...origin/main` 干净。
+- Windows 证据：当前仅有 Darwin/macOS 15.7.7，PATH 无 `powershell`/`pwsh`，也无获授权 Windows/真机，已置顶写入 `BLOCKED.md`。
+- 最大风险：PowerShell 5.1/Task Scheduler 语义、Windows ACL 与真实设备渲染只能由目的端证据确认，禁止本地替身冒充。
+- 约束：不改版本/tag，不推送/发布，不改全局安装、系统任务、远端仓库或冻结文件；运行时依赖保持 0。
+
+## Windows 适配工作轮 2/6：测试先行（红测完成）
+
+- 新增 Windows APPDATA/LOCALAPPDATA、显式 XDG、USERPROFILE 回退、目录变量全缺失、Unix/Windows mode、安全扫描 `windows/**` 与运行器失败码静态合同。
+- 定向红测：9 项中 5 通过、4 失败；失败分别证明跨平台配置导出缺失、Windows 目录未进安全白名单、运行器文件不存在。既有 CLI 失败路径全部仍通过。
+
+## Windows 适配工作轮 3/6：配置、安全与调度实现（本地可验项完成）
+
+- Windows Quote 配置默认 `%APPDATA%`、图片默认 `%LOCALAPPDATA%`，均支持 `USERPROFILE` 回退；显式 XDG 优先，Unix 默认与精确 `0600` 拒绝保持不变。
+- `windows/**` 已纳入全根目录秘密扫描；检查脚本使用同一跨平台 Quote 配置路径查找秘密。全量测试 51/51、fail/skip/todo=0；安全扫描 36/0/0。
+- 新增 PowerShell 5.1 风格 common/install/run/uninstall：当前用户 Limited、交互登录、1800 秒、doctor 前置、ACL fail-closed、绝对 Node/CLI、无 `npx`、仅退出码日志、幂等更新与定向卸载。
+- 本机无 PowerShell/Windows，未运行脚本或改系统任务；目的端解析、失败任务结果与安装/卸载证据仍按 `BLOCKED.md` 未确认。
+
+## Windows 适配工作轮 4/6：打包、文档与 CI（实现完成，远端未运行）
+
+- `package.json` 将 `windows/**` 纳入 files，版本仍为 0.1.0、运行时依赖仍为 0；当前 dry-run tarball 为 17 文件，仅新增 common/install/run/uninstall 四个 PowerShell 文件。
+- README 已分开记录 Windows 配置与当前用户 ACL、`.cmd` 手动链路、安装/检查/卸载、默认日志、休眠排障，并保留 macOS launchd 链路。
+- 新增 Windows/macOS/Ubuntu Node 20 CI；Windows job 在 PowerShell 5.1 解析脚本、从 tarball 全局安装、检查 `.cmd --help`，并以测试替身验证 PT30M、失败码 1、无 key 日志、幂等安装和定向卸载。
+- CI YAML 本地解析通过，但按禁止远端写入未推送、未运行；合成失败任务也不等同于真实 Quote/0 渲染，继续列为阻塞。
+
+## Windows 适配工作轮 5/6：本地终验与交付（完成，外部项阻塞）
+
+- 最终 `pnpm build` exit 0（11 JS）；`pnpm test` exit 0（53/53，fail/skip/todo=0）；`pnpm security-check` exit 0（37/0/0）。
+- `pnpm pack --dry-run` exit 0：17 文件，仅 README/LICENSE/package、9 个 src、launchd 模板和 4 个 Windows 脚本；不含测试、CI、进度、阻塞、日志、凭据或本机路径。
+- launchd plist lint `OK`；CI YAML 解析与 `git diff --check` 通过；冻结文件无差异；版本仍 0.1.0，运行时依赖为 0。
+- 未改本机全局安装、launchd/任务计划程序、真实设备、远端仓库或 npm；未改版本/tag，未推送/发布。
+- 硬指标 1 与三平台门禁仍缺真实目的端证据，详见置顶 `BLOCKED.md`；本地结果不得表述为 Windows 或真机完成。
+
 ## 工作轮 1/6：任务 0 前置检查（完成）
 
 - `pwd`：`/Users/zzzhizhi/Developer/zzzhizhia/vibe-usage-quote0`

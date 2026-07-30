@@ -10,7 +10,7 @@ const ALLOWED_FILES = new Set([
   'PROGRESS.md',
   'BLOCKED.md',
 ]);
-const ALLOWED_DIRECTORIES = new Set(['.github', 'src', 'test', 'scripts', 'launchd', 'artifacts']);
+const ALLOWED_DIRECTORIES = new Set(['.github', 'src', 'test', 'scripts', 'launchd', 'windows', 'artifacts']);
 const IGNORED_DIRECTORIES = new Set(['.git', 'node_modules']);
 
 function projectFiles(path, root = path) {

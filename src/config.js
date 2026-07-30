@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { join, win32 } from 'node:path';
 
 const DEFAULT_VIBE_URL = 'https://vibecafe.ai';
 const DEFAULT_QUOTE_URL = 'https://dot.mindreset.tech';
@@ -18,19 +18,46 @@ export function vibeConfigPath() {
   return join(homedir(), '.vibe-usage', 'config.json');
 }
 
-export function quoteConfigPath(env = process.env) {
-  const root = env.XDG_CONFIG_HOME || join(homedir(), '.config');
-  return join(root, 'vibe-usage-quote0', 'config.json');
+function pathJoin(platform) {
+  return platform === 'win32' ? win32.join : join;
 }
 
-export function dataDirectory(env = process.env) {
-  const root = env.XDG_DATA_HOME || join(homedir(), '.local', 'share');
-  return join(root, 'vibe-usage-quote0');
+function windowsRoot(env, variable, fallbackParts) {
+  if (env[variable]) return env[variable];
+  if (env.USERPROFILE) return win32.join(env.USERPROFILE, ...fallbackParts);
+  throw new Error(`Windows 目录无法确定：缺少 ${variable} 和 USERPROFILE`);
+}
+
+export function quoteConfigPath(env = process.env, options = {}) {
+  const platform = options.platform ?? process.platform;
+  const joinPath = pathJoin(platform);
+  let root = env.XDG_CONFIG_HOME;
+  if (!root && platform === 'win32') {
+    root = windowsRoot(env, 'APPDATA', ['AppData', 'Roaming']);
+  }
+  if (!root) root = joinPath(options.home ?? homedir(), '.config');
+  return joinPath(root, 'vibe-usage-quote0', 'config.json');
+}
+
+export function dataDirectory(env = process.env, options = {}) {
+  const platform = options.platform ?? process.platform;
+  const joinPath = pathJoin(platform);
+  let root = env.XDG_DATA_HOME;
+  if (!root && platform === 'win32') {
+    root = windowsRoot(env, 'LOCALAPPDATA', ['AppData', 'Local']);
+  }
+  if (!root) root = joinPath(options.home ?? homedir(), '.local', 'share');
+  return joinPath(root, 'vibe-usage-quote0');
 }
 
 export function fileMode(path) {
   if (!existsSync(path)) return null;
   return statSync(path).mode & 0o777;
+}
+
+export function assertQuoteConfigMode(path, mode, platform = process.platform) {
+  if (platform === 'win32' || mode === null || mode === 0o600) return;
+  throw new Error(`Quote 配置权限必须为 0600：${path}`);
 }
 
 export function loadVibeConfig(env = process.env) {
@@ -47,12 +74,10 @@ export function loadVibeConfig(env = process.env) {
   };
 }
 
-export function loadQuoteConfig(env = process.env) {
-  const path = quoteConfigPath(env);
+export function loadQuoteConfig(env = process.env, options = {}) {
+  const path = quoteConfigPath(env, options);
   const mode = fileMode(path);
-  if (mode !== null && mode !== 0o600) {
-    throw new Error(`Quote 配置权限必须为 0600：${path}`);
-  }
+  assertQuoteConfigMode(path, mode, options.platform ?? process.platform);
   const file = readJson(path) ?? {};
   const apiKey = env.QUOTE0_API_KEY || file.apiKey;
   const deviceId = env.QUOTE0_DEVICE_ID || file.deviceId;

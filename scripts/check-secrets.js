@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { quoteConfigPath, vibeConfigPath } from '../src/config.js';
 import { scanProject } from '../src/security.js';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -15,9 +15,8 @@ function readConfig(path) {
   }
 }
 
-const vibe = readConfig(join(homedir(), '.vibe-usage', 'config.json'));
-const configHome = process.env.XDG_CONFIG_HOME || join(homedir(), '.config');
-const quote = readConfig(join(configHome, 'vibe-usage-quote0', 'config.json'));
+const vibe = readConfig(vibeConfigPath());
+const quote = readConfig(quoteConfigPath());
 const secrets = [
   process.env.VIBE_USAGE_API_KEY,
   vibe.apiKey,

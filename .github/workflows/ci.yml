@@ -1,0 +1,185 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - macos-latest
+          - ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.15.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm test
+      - run: pnpm security-check
+      - run: pnpm pack --dry-run
+      - name: Lint launchd template
+        if: runner.os == 'macOS'
+        run: plutil -lint launchd/com.vibeusage.vibe-usage-quote0.plist
+      - name: Validate Windows package and scheduled failure path
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          if ($PSVersionTable.PSVersion.Major -ne 5 -or $PSVersionTable.PSVersion.Minor -lt 1) {
+            throw "Expected Windows PowerShell 5.1, got $($PSVersionTable.PSVersion)"
+          }
+
+          $parseErrors = @()
+          foreach ($scriptFile in Get-ChildItem -LiteralPath windows -Filter '*.ps1') {
+            $tokens = $null
+            $errors = $null
+            [Management.Automation.Language.Parser]::ParseFile(
+              $scriptFile.FullName,
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+            $parseErrors += $errors
+          }
+          if ($parseErrors.Count -gt 0) {
+            throw ($parseErrors | ForEach-Object Message | Out-String)
+          }
+
+          pnpm pack --pack-destination $env:RUNNER_TEMP
+          if ($LASTEXITCODE -ne 0) { throw 'pnpm pack failed' }
+          $tarball = Get-ChildItem -LiteralPath $env:RUNNER_TEMP -Filter 'vibe-usage-quote0-*.tgz' |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1
+          npm install --global $tarball.FullName
+          if ($LASTEXITCODE -ne 0) { throw 'global tarball install failed' }
+
+          $nodePath = (Get-Command node.exe -CommandType Application).Source
+          $cliPath = (Get-Command vibe-usage-quote0.cmd -CommandType Application).Source
+          & $cliPath --help
+          if ($LASTEXITCODE -ne 0) { throw '.cmd --help failed' }
+
+          $packageRoot = Join-Path ((npm root -g).Trim()) 'vibe-usage-quote0'
+          $taskName = 'VibeUsageQuote0'
+          $configDir = Join-Path $env:APPDATA 'vibe-usage-quote0'
+          $configPath = Join-Path $configDir 'config.json'
+          $logPath = Join-Path $env:RUNNER_TEMP 'scheduled-task.log'
+          $scheduledLogPath = Join-Path $env:LOCALAPPDATA 'vibe-usage-quote0\logs\scheduled-task.log'
+          $shimBackup = Join-Path $env:RUNNER_TEMP 'vibe-usage-quote0.cmd.backup'
+          $installScript = Join-Path $packageRoot 'windows\install.ps1'
+          $runScript = Join-Path $packageRoot 'windows\run.ps1'
+          $uninstallScript = Join-Path $packageRoot 'windows\uninstall.ps1'
+          $powerShell = Join-Path $PSHOME 'powershell.exe'
+          $placeholder = 'scheduler-ci-secret-placeholder'
+
+          try {
+            Copy-Item -LiteralPath $cliPath -Destination $shimBackup
+            Set-Content -LiteralPath $cliPath -Encoding Ascii -Value @(
+              '@echo off',
+              'if "%~1"=="doctor" exit /b 0',
+              'if "%~1"=="push" echo scheduler-ci-secret-placeholder',
+              'if "%~1"=="push" exit /b 1',
+              'exit /b 2'
+            )
+
+            New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+            Set-Content -LiteralPath $configPath -Encoding Ascii -Value '{"apiKey":"ci-placeholder","deviceId":"ci-device"}'
+            $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+            $acl = New-Object Security.AccessControl.FileSecurity
+            $acl.SetOwner($identity.User)
+            $acl.SetAccessRuleProtection($true, $false)
+            $rule = New-Object Security.AccessControl.FileSystemAccessRule(
+              $identity.User,
+              [Security.AccessControl.FileSystemRights]::Modify,
+              [Security.AccessControl.AccessControlType]::Allow
+            )
+            $acl.AddAccessRule($rule)
+            Set-Acl -LiteralPath $configPath -AclObject $acl
+
+            & $powerShell -NoProfile -ExecutionPolicy Bypass -File $installScript -DryRun -NodePath $nodePath -CliPath $cliPath
+            if ($LASTEXITCODE -ne 0) { throw 'installer dry-run failed' }
+            if ($null -ne (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue)) {
+              throw 'installer dry-run changed Task Scheduler'
+            }
+
+            & $powerShell -NoProfile -ExecutionPolicy Bypass -File $runScript -NodePath $nodePath -CliPath $cliPath -LogPath $logPath
+            if ($LASTEXITCODE -ne 1) { throw "runner returned $LASTEXITCODE instead of 1" }
+            if ((Get-Content -LiteralPath $logPath -Raw).Contains($placeholder)) {
+              throw 'runner log contains the placeholder key'
+            }
+
+            & $powerShell -NoProfile -ExecutionPolicy Bypass -File $installScript -NodePath $nodePath -CliPath $cliPath
+            if ($LASTEXITCODE -ne 0) { throw 'scheduled task install failed' }
+            & $powerShell -NoProfile -ExecutionPolicy Bypass -File $installScript -NodePath $nodePath -CliPath $cliPath
+            if ($LASTEXITCODE -ne 0) { throw 'idempotent scheduled task update failed' }
+
+            $task = Get-ScheduledTask -TaskName $taskName
+            if ([string]$task.Triggers[0].Repetition.Interval -ne 'PT30M') {
+              throw 'scheduled task interval is not PT30M'
+            }
+            if ([string]$task.Principal.RunLevel -ne 'Limited') {
+              throw 'scheduled task does not use Limited privileges'
+            }
+            $currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
+            if ($task.Principal.UserId -ne $currentIdentity.Name -and $task.Principal.UserId -ne $currentIdentity.User.Value) {
+              throw 'scheduled task does not belong to the current user'
+            }
+            $taskDefinition = $task.Actions | ConvertTo-Json -Compress
+            if ($taskDefinition.Contains($placeholder) -or $taskDefinition -match 'apiKey|deviceId') {
+              throw 'scheduled task definition contains credential material'
+            }
+
+            if (Test-Path -LiteralPath $scheduledLogPath) {
+              Remove-Item -LiteralPath $scheduledLogPath
+            }
+            $before = Get-ScheduledTaskInfo -TaskName $taskName
+            Start-ScheduledTask -TaskName $taskName
+            $deadline = (Get-Date).AddSeconds(60)
+            do {
+              Start-Sleep -Milliseconds 500
+              $state = (Get-ScheduledTask -TaskName $taskName).State
+              $info = Get-ScheduledTaskInfo -TaskName $taskName
+              $completed = $info.LastRunTime -gt $before.LastRunTime -and $state -ne 'Running' -and $state -ne 'Queued'
+            } while (-not $completed -and (Get-Date) -lt $deadline)
+            if (-not $completed) { throw 'scheduled task did not finish within 60 seconds' }
+            if ($info.LastTaskResult -ne 1) {
+              throw "scheduled failure result was $($info.LastTaskResult), expected 1"
+            }
+            if (-not (Test-Path -LiteralPath $scheduledLogPath -PathType Leaf)) {
+              throw 'scheduled task log was not created'
+            }
+            if ((Get-Content -LiteralPath $scheduledLogPath -Raw).Contains($placeholder)) {
+              throw 'scheduled task log contains the placeholder key'
+            }
+
+            & $powerShell -NoProfile -ExecutionPolicy Bypass -File $uninstallScript
+            if ($LASTEXITCODE -ne 0) { throw 'scheduled task uninstall failed' }
+            if ($null -ne (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue)) {
+              throw 'scheduled task still exists after uninstall'
+            }
+            if (-not (Test-Path -LiteralPath $configPath -PathType Leaf)) {
+              throw 'uninstaller removed the Quote config'
+            }
+            if (-not (Test-Path -LiteralPath $scheduledLogPath -PathType Leaf)) {
+              throw 'uninstaller removed the scheduled-task log'
+            }
+          } finally {
+            if ($null -ne (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue)) {
+              Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+            }
+            if (Test-Path -LiteralPath $shimBackup) {
+              Copy-Item -LiteralPath $shimBackup -Destination $cliPath -Force
+            }
+          }
