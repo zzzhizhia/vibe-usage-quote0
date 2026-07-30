@@ -18,6 +18,7 @@
 - 修复计划任务无法继承临时 XDG 配置路径的问题；安装前会校验路径已持久化。
 - Windows 改用当前用户 ACL 保护凭据，不再显示无意义的 Unix `0600` 权限警告；macOS/Linux 权限检查保持不变。
 - 项目与 GitHub Actions 统一使用兼容 Node.js 20 的 pnpm 版本，确保三平台 CI 和 tag 发布流程能够完成工具链初始化。
+- 测试脚本改用零依赖 Node.js 启动器枚举 `*.test.js`，避免 Windows 将 shell 通配符当作字面量路径，同时排除 fixture 文件。
 
 ### Changed
 

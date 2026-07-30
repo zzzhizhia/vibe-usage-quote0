@@ -30,7 +30,7 @@
   ],
   "scripts": {
     "build": "node scripts/check-build.js",
-    "test": "node --test test/*.test.js",
+    "test": "node scripts/run-tests.js",
     "security-check": "node scripts/check-secrets.js",
     "doctor": "node src/index.js doctor",
     "dry-run": "node src/index.js dry-run",
