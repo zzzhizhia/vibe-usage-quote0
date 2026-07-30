@@ -17,6 +17,7 @@
 - 修复 Windows PowerShell 5.1 重定向原生命令 stderr 时，将成功的 `.cmd` 错误记录为失败的问题。
 - 修复计划任务无法继承临时 XDG 配置路径的问题；安装前会校验路径已持久化。
 - Windows 改用当前用户 ACL 保护凭据，不再显示无意义的 Unix `0600` 权限警告；macOS/Linux 权限检查保持不变。
+- GitHub Actions 使用兼容 Node.js 20 的 pnpm 版本，确保三平台 CI 和 tag 发布流程能够完成工具链初始化。
 
 ### Changed
 
