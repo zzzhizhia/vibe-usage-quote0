@@ -372,6 +372,20 @@ test('Windows ACL 子进程失败时保留 PowerShell 错误细节', () => {
   }), /Set-Acl access denied.*配置未替换/);
 });
 
+test('Windows PowerShell 5.1 子进程不继承 PowerShell 7 模块路径', () => {
+  let childOptions;
+  protectWindowsConfig('C:\\config.json', {
+    processEnv: { PATH: 'C:\\Windows', PSModulePath: 'C:\\Program Files\\PowerShell\\Modules' },
+    spawnSyncImpl(command, args, options) {
+      childOptions = options;
+      return { status: 0, stdout: '', stderr: '' };
+    },
+  });
+
+  assert.equal(childOptions.env.PSModulePath, undefined);
+  assert.equal(childOptions.env.PATH, 'C:\\Windows');
+});
+
 test('Windows Vibe 路径与两份配置 ACL 调用合同', async (t) => {
   assert.equal(
     vibeConfigPath({ USERPROFILE: 'C:\\Users\\alice' }, { platform: 'win32' }),

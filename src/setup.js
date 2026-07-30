@@ -150,6 +150,14 @@ function removeIfPresent(fileSystem, path) {
   if (fileSystem.existsSync(path)) fileSystem.unlinkSync(path);
 }
 
+function windowsPowerShellEnvironment(env = process.env) {
+  const childEnv = { ...env };
+  for (const name of Object.keys(childEnv)) {
+    if (name.toLowerCase() === 'psmodulepath') delete childEnv[name];
+  }
+  return childEnv;
+}
+
 export function protectWindowsConfig(path, options = {}) {
   const spawn = options.spawnSyncImpl ?? spawnSync;
   const result = spawn('powershell.exe', [
@@ -162,7 +170,11 @@ export function protectWindowsConfig(path, options = {}) {
     options.scriptPath ?? WINDOWS_ACL_SCRIPT,
     '-Path',
     path,
-  ], { encoding: 'utf8', windowsHide: true });
+  ], {
+    encoding: 'utf8',
+    windowsHide: true,
+    env: windowsPowerShellEnvironment(options.processEnv),
+  });
   if (result.error) throw new Error(`无法设置 Windows 配置 ACL：${result.error.message}`);
   if (result.status !== 0) {
     const detail = String(result.stderr || result.stdout || '').trim().replace(/\s+/g, ' ');
@@ -262,7 +274,11 @@ export function installWindowsScheduledTask(options = {}) {
     'Bypass',
     '-File',
     options.scriptPath ?? WINDOWS_INSTALL_SCRIPT,
-  ], { encoding: 'utf8', windowsHide: true });
+  ], {
+    encoding: 'utf8',
+    windowsHide: true,
+    env: windowsPowerShellEnvironment(options.processEnv),
+  });
   if (result.error) throw new Error(`无法启动 Windows 计划任务安装器：${result.error.message}`);
   if (result.status !== 0) throw new Error('Windows 计划任务安装失败');
 }
