@@ -112,8 +112,9 @@ jobs:
               throw 'installer dry-run changed Task Scheduler'
             }
 
-            & $powerShell -NoProfile -ExecutionPolicy Bypass -File $runScript $nodePath $cliPath 'push' $logPath
-            if ($LASTEXITCODE -ne 1) { throw "runner returned $LASTEXITCODE instead of 1" }
+            $runArguments = '-NoProfile -ExecutionPolicy Bypass -File "{0}" -NodePath "{1}" -CliPath "{2}" -Command push -LogPath "{3}"' -f $runScript, $nodePath, $cliPath, $logPath
+            $runProcess = Start-Process -FilePath $powerShell -ArgumentList $runArguments -Wait -PassThru -NoNewWindow
+            if ($runProcess.ExitCode -ne 1) { throw "runner returned $($runProcess.ExitCode) instead of 1" }
             if ((Get-Content -LiteralPath $logPath -Raw).Contains($placeholder)) {
               throw 'runner log contains the placeholder key'
             }
