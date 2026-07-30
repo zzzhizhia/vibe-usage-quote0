@@ -224,9 +224,10 @@ export function writeConfigsAtomically(entries, options = {}) {
         rollbackError ??= currentError;
       }
     }
+    const cause = error?.message || String(error);
     const detail = rollbackError
-      ? '配置原子写入失败，且回滚未能完整完成'
-      : '配置原子写入失败；原配置已保留';
+      ? `配置原子写入失败：${cause}；且回滚未能完整完成`
+      : `配置原子写入失败：${cause}；原配置已保留`;
     throw new SetupStageError('配置写入', detail, '检查配置目录权限后重新运行 vibe-usage-quote0 setup');
   }
 

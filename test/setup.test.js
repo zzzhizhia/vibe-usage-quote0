@@ -336,7 +336,7 @@ test('两文件事务第二次替换失败时恢复两份旧内容', (t) => {
   assert.throws(() => writeConfigsAtomically([
     { path: paths.vibe, value: { apiKey: 'new-vibe-2020' } },
     { path: paths.quote, value: { apiKey: 'new-quote-2121', deviceId: 'new-device-2222' } },
-  ], { fileSystem: failingFs, platform: 'linux' }), /原配置已保留/);
+  ], { fileSystem: failingFs, platform: 'linux' }), /simulated rename failure.*原配置已保留/);
 
   assert.equal(readFileSync(paths.vibe, 'utf8'), oldVibe);
   assert.equal(readFileSync(paths.quote, 'utf8'), oldQuote);

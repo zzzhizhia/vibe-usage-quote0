@@ -77,16 +77,6 @@ export async function runCli(argv = process.argv.slice(2), options = {}) {
   const env = options.env ?? process.env;
   const stdout = options.stdout ?? ((line) => process.stdout.write(`${line}\n`));
   const logger = options.logger ?? defaultLogger;
-  const runtime = {
-    env,
-    stdout,
-    logger,
-    fetchImpl: options.fetchImpl,
-    retryOptions: options.retryOptions,
-    cwd: options.cwd ?? process.cwd(),
-    dataDirectory: options.dataDirectory ?? dataDirectory(env),
-  };
-
   if (command === 'help' || command === '--help' || command === '-h') {
     stdout(HELP.trimEnd());
     return { command: 'help' };
@@ -110,6 +100,16 @@ export async function runCli(argv = process.argv.slice(2), options = {}) {
   if (!['doctor', 'dry-run', 'push'].includes(command)) {
     throw new Error(`未知命令：${command}`);
   }
+
+  const runtime = {
+    env,
+    stdout,
+    logger,
+    fetchImpl: options.fetchImpl,
+    retryOptions: options.retryOptions,
+    cwd: options.cwd ?? process.cwd(),
+    dataDirectory: options.dataDirectory ?? dataDirectory(env),
+  };
 
   const vibe = loadVibeConfig(env);
   if (vibe.insecureMode) stdout('警告：~/.vibe-usage/config.json 权限宽于 0600；未自动修改。');
