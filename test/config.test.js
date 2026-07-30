@@ -4,6 +4,7 @@ import { join, win32 } from 'node:path';
 import {
   assertQuoteConfigMode,
   dataDirectory,
+  isVibeConfigModeInsecure,
   quoteConfigPath,
 } from '../src/config.js';
 
@@ -90,4 +91,11 @@ test('Unix 严格要求 0600，Windows 不使用无意义的 Unix mode', () => {
     /0600/,
   );
   assert.doesNotThrow(() => assertQuoteConfigMode('C:\\config.json', 0o666, 'win32'));
+});
+
+test('Vibe 配置只在 Unix mode 有安全意义时警告', () => {
+  assert.equal(isVibeConfigModeInsecure(0o600, 'darwin'), false);
+  assert.equal(isVibeConfigModeInsecure(0o644, 'darwin'), true);
+  assert.equal(isVibeConfigModeInsecure(0o666, 'win32'), false);
+  assert.equal(isVibeConfigModeInsecure(null, 'win32'), false);
 });

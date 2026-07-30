@@ -66,7 +66,9 @@ chmod 600 ~/.config/vibe-usage-quote0/config.json
 
 ## Windows 配置
 
-Quote 配置默认位于 `%APPDATA%\vibe-usage-quote0\config.json`，渲染图默认写入 `%LOCALAPPDATA%\vibe-usage-quote0\quote0-render.png`。如果显式设置了 `XDG_CONFIG_HOME` 或 `XDG_DATA_HOME`，仍分别优先使用 XDG 路径；缺少 APPDATA/LOCALAPPDATA 时回退到 USERPROFILE，连 USERPROFILE 也缺失时会明确失败。
+Vibe 配置沿用 `%USERPROFILE%\.vibe-usage\config.json`；Quote 配置默认位于 `%APPDATA%\vibe-usage-quote0\config.json`，渲染图默认写入 `%LOCALAPPDATA%\vibe-usage-quote0\quote0-render.png`。如果显式设置了 `XDG_CONFIG_HOME` 或 `XDG_DATA_HOME`，仍分别优先使用 XDG 路径；缺少 APPDATA/LOCALAPPDATA 时回退到 USERPROFILE，连 USERPROFILE 也缺失时会明确失败。
+
+Windows 的 Unix mode 没有 ACL 含义，因此 CLI 不会显示 macOS/Linux 的 `0600` 警告；两份凭据文件应改用当前用户专属 ACL。
 
 计划任务不会继承只在当前 PowerShell 进程中设置的 XDG 变量。需要让自动刷新使用 XDG 时，先持久化为当前用户环境变量，再打开新的 PowerShell 会话；路径不是秘密，不要在这些变量中放 key：
 
@@ -82,6 +84,7 @@ Quote 配置默认位于 `%APPDATA%\vibe-usage-quote0\config.json`，渲染图�
 ```powershell
 $ConfigDir = Join-Path $env:APPDATA 'vibe-usage-quote0'
 $ConfigPath = Join-Path $ConfigDir 'config.json'
+$VibeConfigPath = Join-Path $env:USERPROFILE '.vibe-usage\config.json'
 New-Item -ItemType Directory -Path $ConfigDir -Force | Out-Null
 notepad.exe $ConfigPath
 ```
@@ -90,12 +93,14 @@ notepad.exe $ConfigPath
 
 ```powershell
 $CurrentSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-icacls.exe $ConfigPath /reset
-icacls.exe $ConfigPath /inheritance:r /grant:r "*$($CurrentSid):(M)"
-Get-Acl -LiteralPath $ConfigPath | Format-List Owner,AreAccessRulesProtected,Access
+foreach ($PrivateConfig in @($VibeConfigPath, $ConfigPath)) {
+  icacls.exe $PrivateConfig /reset
+  icacls.exe $PrivateConfig /inheritance:r /grant:r "*$($CurrentSid):(M)"
+  Get-Acl -LiteralPath $PrivateConfig | Format-List Owner,AreAccessRulesProtected,Access
+}
 ```
 
-Windows 的 Unix mode 没有安全意义，因此 CLI 不会因 `stat.mode` 误拒绝配置；这不是无声降级。计划任务安装器会 fail-closed 检查 ACL 已禁止继承、当前用户有允许规则且没有其他主体的允许规则，否则输出上述 `icacls` 修复方法并拒绝安装。不要把 key 或设备 ID 放进任务参数、环境脚本或日志。
+计划任务安装器会 fail-closed 检查 Quote 配置 ACL 已禁止继承、当前用户有允许规则且没有其他主体的允许规则，否则输出上述 `icacls` 修复方法并拒绝安装。不要把 key 或设备 ID 放进任务参数、环境脚本或日志。
 
 ## 用法
 

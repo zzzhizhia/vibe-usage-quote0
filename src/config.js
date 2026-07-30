@@ -60,9 +60,14 @@ export function assertQuoteConfigMode(path, mode, platform = process.platform) {
   throw new Error(`Quote 配置权限必须为 0600：${path}`);
 }
 
+export function isVibeConfigModeInsecure(mode, platform = process.platform) {
+  return platform !== 'win32' && mode !== null && (mode & 0o077) !== 0;
+}
+
 export function loadVibeConfig(env = process.env) {
   const path = vibeConfigPath();
   const file = readJson(path) ?? {};
+  const mode = fileMode(path);
   const apiKey = env.VIBE_USAGE_API_KEY || file.apiKey;
   const apiUrl = env.VIBE_USAGE_API_URL || file.apiUrl || DEFAULT_VIBE_URL;
   if (!apiKey) throw new Error('缺少 Vibe API key');
@@ -70,7 +75,7 @@ export function loadVibeConfig(env = process.env) {
     apiKey,
     apiUrl,
     path,
-    insecureMode: fileMode(path) !== null && (fileMode(path) & 0o077) !== 0,
+    insecureMode: isVibeConfigModeInsecure(mode),
   };
 }
 

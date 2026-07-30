@@ -4,7 +4,7 @@
 
 - **原“无授权 Windows/真机环境”阻塞已解除**：已在授权 Windows 10/PowerShell 5.1/Node 22 目标机完成 tarball 全局安装、手动 `doctor/dry-run/push`、合成失败任务、真实成功任务、PT30M/`LastTaskResult=0` 与安装到卸载验证；目标为正确 Dot `...CBC4`。
 - **仍未解除：三平台 CI 目的端证据**。本轮未获推送或远端工作流运行授权，GitHub-hosted Windows/macOS/Ubuntu Node 20 门禁仍只能标记未运行。
-- **仍未确认：物理屏幕现场观测**。Canvas HTTP 200、`renderInfo` 变化、下载图 296x152 黑白和任务图片刷新均已证实，但本会话无法直接观察 Dot 实体屏幕。
+- **物理屏幕现场观测已解除**：用户确认正确 Dot `...CBC4` 的实体屏幕观感正常；Canvas HTTP 200、`renderInfo` 变化、296x152 黑白下载图和自然计划触发也均已证实。
 
 ## Windows 适配新增阻塞（2026-07-30，置顶）
 
