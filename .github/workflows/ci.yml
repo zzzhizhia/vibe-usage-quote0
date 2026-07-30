@@ -106,7 +106,7 @@ jobs:
             $acl.AddAccessRule($rule)
             Set-Acl -LiteralPath $configPath -AclObject $acl
 
-            & $powerShell -NoProfile -ExecutionPolicy Bypass -File $installScript -DryRun -NodePath $nodePath -CliPath $cliPath
+            & $powerShell -NoProfile -ExecutionPolicy Bypass -File $installScript -DryRun -NodePath $nodePath -CliPath $cliPath -ConfigPath $configPath
             if ($LASTEXITCODE -ne 0) { throw 'installer dry-run failed' }
             if ($null -ne (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue)) {
               throw 'installer dry-run changed Task Scheduler'
@@ -118,9 +118,9 @@ jobs:
               throw 'runner log contains the placeholder key'
             }
 
-            & $powerShell -NoProfile -ExecutionPolicy Bypass -File $installScript -NodePath $nodePath -CliPath $cliPath
+            & $powerShell -NoProfile -ExecutionPolicy Bypass -File $installScript -NodePath $nodePath -CliPath $cliPath -ConfigPath $configPath
             if ($LASTEXITCODE -ne 0) { throw 'scheduled task install failed' }
-            & $powerShell -NoProfile -ExecutionPolicy Bypass -File $installScript -NodePath $nodePath -CliPath $cliPath
+            & $powerShell -NoProfile -ExecutionPolicy Bypass -File $installScript -NodePath $nodePath -CliPath $cliPath -ConfigPath $configPath
             if ($LASTEXITCODE -ne 0) { throw 'idempotent scheduled task update failed' }
 
             $task = Get-ScheduledTask -TaskName $taskName
