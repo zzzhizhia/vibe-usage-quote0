@@ -112,7 +112,7 @@ jobs:
               throw 'installer dry-run changed Task Scheduler'
             }
 
-            & $powerShell -NoProfile -ExecutionPolicy Bypass -File $runScript -NodePath $nodePath -CliPath $cliPath -LogPath $logPath
+            & $powerShell -NoProfile -ExecutionPolicy Bypass -File $runScript $nodePath $cliPath 'push' $logPath
             if ($LASTEXITCODE -ne 1) { throw "runner returned $LASTEXITCODE instead of 1" }
             if ((Get-Content -LiteralPath $logPath -Raw).Contains($placeholder)) {
               throw 'runner log contains the placeholder key'
