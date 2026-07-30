@@ -132,8 +132,14 @@ jobs:
               throw 'scheduled task does not use Limited privileges'
             }
             $currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
-            if ($task.Principal.UserId -ne $currentIdentity.Name -and $task.Principal.UserId -ne $currentIdentity.User.Value) {
-              throw 'scheduled task does not belong to the current user'
+            $taskUserId = [string]$task.Principal.UserId
+            $taskSid = $taskUserId
+            if (-not $taskUserId.StartsWith('S-1-')) {
+              $taskAccount = New-Object Security.Principal.NTAccount($taskUserId)
+              $taskSid = $taskAccount.Translate([Security.Principal.SecurityIdentifier]).Value
+            }
+            if ($taskSid -ne $currentIdentity.User.Value) {
+              throw "scheduled task user '$taskUserId' does not resolve to the current user"
             }
             $taskDefinition = $task.Actions | ConvertTo-Json -Compress
             if ($taskDefinition.Contains($placeholder) -or $taskDefinition -match 'apiKey|deviceId') {
