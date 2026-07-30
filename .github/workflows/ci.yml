@@ -64,8 +64,8 @@ jobs:
           npm install --global $tarball.FullName
           if ($LASTEXITCODE -ne 0) { throw 'global tarball install failed' }
 
-          $nodePath = (Get-Command node.exe -CommandType Application).Source
-          $cliPath = (Get-Command vibe-usage-quote0.cmd -CommandType Application).Source
+          $nodePath = (Get-Command node.exe -CommandType Application | Select-Object -First 1).Source
+          $cliPath = (Get-Command vibe-usage-quote0.cmd -CommandType Application | Select-Object -First 1).Source
           & $cliPath --help
           if ($LASTEXITCODE -ne 0) { throw '.cmd --help failed' }
 
