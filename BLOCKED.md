@@ -1,5 +1,11 @@
 # BLOCKED
 
+## Windows 真实目的端续做状态（2026-07-30）
+
+- **原“无授权 Windows/真机环境”阻塞已解除**：已在授权 Windows 10/PowerShell 5.1/Node 22 目标机完成 tarball 全局安装、手动 `doctor/dry-run/push`、合成失败任务、真实成功任务、PT30M/`LastTaskResult=0` 与安装到卸载验证；目标为正确 Dot `...CBC4`。
+- **仍未解除：三平台 CI 目的端证据**。本轮未获推送或远端工作流运行授权，GitHub-hosted Windows/macOS/Ubuntu Node 20 门禁仍只能标记未运行。
+- **仍未确认：物理屏幕现场观测**。Canvas HTTP 200、`renderInfo` 变化、下载图 296x152 黑白和任务图片刷新均已证实，但本会话无法直接观察 Dot 实体屏幕。
+
 ## Windows 适配新增阻塞（2026-07-30，置顶）
 
 1. **真实 Windows 与 Quote/0 终验无授权环境**：当前执行主机证据为 `uname -s` = `Darwin`，`sw_vers` = macOS 15.7.7（24G720），`powershell` 与 `pwsh` 均不在 PATH；没有获授权的 Windows 10/11 主机或该主机连接的真实 Quote/0。因此无法记录目标机 `[Environment]::OSVersion`、PowerShell/Node/pnpm/命令解析和当前用户任务计划程序权限，也无法执行 tarball 全局安装、失败任务到成功任务、手动/计划任务真实渲染、`LastTaskResult=0` 与安装到卸载终验。不得用 macOS、本地替身或未运行的 CI 冒充完成。

@@ -31,11 +31,15 @@ $env:PATH = "$(Split-Path -Parent $resolvedNode);$env:PATH"
 Add-Content -LiteralPath $LogPath -Value "$(Get-Date -Format o) command=$Command started"
 
 $exitCode = 1
+$previousErrorActionPreference = $ErrorActionPreference
 try {
+  $ErrorActionPreference = 'Continue'
   & $resolvedCli $Command 1>$null 2>$null
   $exitCode = $LASTEXITCODE
 } catch {
   $exitCode = 1
+} finally {
+  $ErrorActionPreference = $previousErrorActionPreference
 }
 
 Add-Content -LiteralPath $LogPath -Value "$(Get-Date -Format o) command=$Command exit_code=$exitCode"

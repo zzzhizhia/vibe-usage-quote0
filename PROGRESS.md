@@ -1,5 +1,17 @@
 # PROGRESS
 
+## Windows 真实目的端续做（2026-07-30，完成）
+
+- 目标机：Windows NT 10.0.26200、Windows PowerShell 5.1.26100.8875、Node 22.14.0、npm 10.9.2；直接 `pnpm` 不在 PATH，Corepack 可运行 pnpm 11.18.0。
+- 从当前提交打出的 17 文件 tarball 已全局安装；`.cmd --help`、正确 Dot `...CBC4` 的 `doctor/dry-run/push` 均 exit 0。
+- 手动 `push`：Canvas HTTP 200，90 秒内渲染状态变化；下载图 296x152、黑白、边缘墨点 0。
+- 反向任务：替身 `doctor=0/push=1` 时，运行器和 Task Scheduler 均保留退出码 1；PT30M、Limited、当前用户、任务定义和日志无秘密，卸载后任务不存在且配置保留。
+- 真实 Windows 暴露缺陷：PowerShell 5.1 在 `ErrorActionPreference=Stop` 下重定向原生 stderr 会进入 `catch`，导致成功 `.cmd` 被误记为 1；修复前真实 `run.ps1=1`、`LastTaskResult=1`。
+- 修复后定向合同 1/1、全量 53/53、本地 build/security/launchd/diff 全绿；新 tarball 两端 SHA-256 一致，Windows 真实 `run.ps1=0`、`LastTaskResult=0`。
+- 成功任务使图片更新时间与 SHA 均变化，日志以 `command=push exit_code=0` 收尾；最终卸载 exit 0，任务不存在，配置、图片和日志均保留。
+- 纠错记录：曾误把本机 Quote 配置复制到 Windows，导致 Lan 用量推送到错误设备；发现后立即停止并清理任务，用本机正确用量成功恢复原设备，再以正确 Dot `...CBC4` 配置重做全部真机 API 验收。
+- 未推送、发布或改版本/tag；GitHub-hosted Windows/macOS/Ubuntu CI 仍未运行，物理屏幕现场观测也未由本会话确认。
+
 ## Windows 适配工作轮 1/6：任务 0（完成）
 - 目标：Windows 10/11、PowerShell 5.1+、Node 20+ 支持全局 CLI 与当前用户每 1800 秒刷新，macOS 行为不回退。
 - 顺序：基线与阻塞 -> 测试先行 -> 配置/安全 -> Windows 调度 -> 打包/README/CI -> 本地终验。

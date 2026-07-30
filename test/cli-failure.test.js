@@ -126,9 +126,14 @@ for (const kind of ['missing-canvas', '401', '500']) {
 
 test('Windows 运行器合同保留失败码且不记录子进程输出', () => {
   const runner = readFileSync(join(projectRoot, 'windows', 'run.ps1'), 'utf8');
+  const invokeIndex = runner.indexOf('& $resolvedCli $Command');
+  const continueIndex = runner.indexOf("$ErrorActionPreference = 'Continue'");
+  const restoreIndex = runner.indexOf('$ErrorActionPreference = $previousErrorActionPreference');
 
   assert.match(runner, /Get-CommandPath/);
   assert.match(runner, /exit \$exitCode/);
+  assert.ok(continueIndex >= 0 && continueIndex < invokeIndex);
+  assert.ok(restoreIndex > invokeIndex);
   assert.doesNotMatch(runner, /\bnpx\b/i);
   assert.doesNotMatch(runner, /Add-Content[^\n]*(output|stdout|stderr)/i);
 });
