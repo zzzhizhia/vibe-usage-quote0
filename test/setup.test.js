@@ -10,6 +10,7 @@ import { DeviceUnavailableError } from '../src/quote.js';
 import {
   SetupCancelledError,
   createTerminalIo,
+  protectWindowsConfig,
   runSetup,
   writeConfigsAtomically,
 } from '../src/setup.js';
@@ -361,6 +362,14 @@ test('Windows 第二份 ACL 设置失败时清理所有临时文件', (t) => {
   assert.equal(nodeFs.existsSync(paths.quote), false);
   assert.deepEqual(readdirSync(join(paths.vibe, '..')), []);
   assert.deepEqual(readdirSync(join(paths.quote, '..')), []);
+});
+
+test('Windows ACL 子进程失败时保留 PowerShell 错误细节', () => {
+  assert.throws(() => protectWindowsConfig('C:\\config.json', {
+    spawnSyncImpl() {
+      return { status: 1, stdout: '', stderr: 'Set-Acl access denied' };
+    },
+  }), /Set-Acl access denied.*配置未替换/);
 });
 
 test('Windows Vibe 路径与两份配置 ACL 调用合同', async (t) => {

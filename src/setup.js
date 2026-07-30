@@ -164,7 +164,10 @@ export function protectWindowsConfig(path, options = {}) {
     path,
   ], { encoding: 'utf8', windowsHide: true });
   if (result.error) throw new Error(`无法设置 Windows 配置 ACL：${result.error.message}`);
-  if (result.status !== 0) throw new Error('无法设置 Windows 配置 ACL；配置未替换');
+  if (result.status !== 0) {
+    const detail = String(result.stderr || result.stdout || '').trim().replace(/\s+/g, ' ');
+    throw new Error(`无法设置 Windows 配置 ACL${detail ? `：${detail}` : ''}；配置未替换`);
+  }
 }
 
 export function writeConfigsAtomically(entries, options = {}) {
