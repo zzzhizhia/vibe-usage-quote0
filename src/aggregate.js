@@ -16,6 +16,32 @@ function compactDecimal(value, decimals = 1) {
   return Number(value.toFixed(decimals)).toString();
 }
 
+const TOKEN_UNITS = [
+  { divisor: 1, suffix: '' },
+  { divisor: 10_000, suffix: '万' },
+  { divisor: 100_000_000, suffix: '亿' },
+  { divisor: 1_000_000_000_000, suffix: '万亿' },
+];
+
+function formatTokenUnit(number, initialUnitIndex) {
+  let unitIndex = initialUnitIndex;
+  while (unitIndex < TOKEN_UNITS.length) {
+    const unit = TOKEN_UNITS[unitIndex];
+    const scaled = number / unit.divisor;
+    const integerDigits = Math.max(1, Math.floor(Math.log10(scaled)) + 1);
+    const decimals = Math.max(0, 4 - integerDigits);
+    const decimalFactor = 10 ** decimals;
+    const rounded = Math.round(number / (unit.divisor / decimalFactor)) / decimalFactor;
+
+    if (rounded < 10_000) {
+      const value = unitIndex === 0 ? rounded.toLocaleString('zh-CN') : rounded.toString();
+      return `${value}${unit.suffix}`;
+    }
+    unitIndex += 1;
+  }
+  return '9999万亿+';
+}
+
 export function truncateText(value, maxLength = 24) {
   const text = String(value ?? '').replace(/\s+/g, ' ').trim();
   if (!text) return '未知';
@@ -72,17 +98,8 @@ export function aggregateUsage(todayResponse, weekResponse) {
 
 export function formatTokens(value) {
   const number = finiteNonNegative(value);
-  if (number >= 10_000_000_000_000_000) return '9999万亿+';
-  if (number >= 1_000_000_000_000) {
-    const scaled = number / 1_000_000_000_000;
-    return `${scaled >= 100 ? Math.round(scaled) : compactDecimal(scaled)}万亿`;
-  }
-  if (number >= 100_000_000) {
-    const scaled = number / 100_000_000;
-    return `${scaled >= 100 ? Math.round(scaled) : compactDecimal(scaled)}亿`;
-  }
-  if (number >= 10_000) return `${(number / 10_000).toFixed(number >= 100_000 ? 0 : 1)}万`;
-  return Math.round(number).toLocaleString('zh-CN');
+  const unitIndex = TOKEN_UNITS.findLastIndex(({ divisor }) => number >= divisor);
+  return formatTokenUnit(number, Math.max(0, unitIndex));
 }
 
 export function formatCost(value) {

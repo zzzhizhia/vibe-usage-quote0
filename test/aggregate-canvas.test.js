@@ -135,6 +135,33 @@ test('主力工具与模型使用平衡宽度预算且两者都可见', () => {
   assert.ok([...payload.data.primaryUsage].length <= 24);
 });
 
+test('Token 按中文单位显示且至多保留四位有效数字', () => {
+  assert.deepEqual(
+    [
+      0,
+      9_999,
+      12_345,
+      123_456,
+      1_234_567,
+      12_345_678,
+      99_999_999,
+      123_456_789,
+      999_999_999_999,
+      1_234_567_890_123,
+    ].map(formatTokens),
+    ['0', '9,999', '1.235万', '12.35万', '123.5万', '1235万', '1亿', '1.235亿', '1万亿', '1.235万亿'],
+  );
+});
+
+test('今日与近 7 日 Token 共用四位有效数字格式', () => {
+  const summary = aggregateUsage(todayUsage, weekUsage);
+  summary.today.totalTokens = 12_345;
+  summary.week.totalTokens = 1_234_567;
+  const payload = buildCanvasPayload(summary, new Date('2026-07-28T04:00:00Z'));
+  assert.equal(payload.data.todayTokens, '1.235万');
+  assert.equal(payload.data.weekTokens, '123.5万');
+});
+
 test('极端有限数值使用有界格式而不是指数或无穷文本', () => {
   assert.equal(formatTokens(Number.MAX_VALUE), '9999万亿+');
   assert.equal(formatCost(Number.MAX_VALUE), '$9999亿+');
