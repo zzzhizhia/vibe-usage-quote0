@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-07-30
+
 ### Added
 
 - 新增 Windows `vibe-usage-quote0 setup` 交互式向导：隐藏输入凭据、复用或明确替换现有配置、发现并精确选择 `CANVAS_API`、确认脱敏设备目标、执行真实 push，并在确认渲染变化后安装 PT30M 当前用户计划任务。
@@ -14,6 +16,13 @@
 ### Changed
 
 - README 将 Windows 新用户快速开始缩减为全局安装与一条 setup 命令；手工 JSON、ACL、`doctor`/`push` 和安装器命令移至高级/故障排查。
+- 今日与近 7 日 Token 改用中文单位显示，至多保留四位有效数字，并在进位时自动切换到更高单位。
+
+### Fixed
+
+- 修复 Windows setup 在无需安装计划任务的路径上过早解析全局运行时路径的问题。
+- 修复 Windows 凭据 ACL 设置失败时未能完整上报错误、清理临时文件的问题。
+- 隔离 Windows PowerShell 模块加载与命令入口，避免测试和 setup 组合时发生意外执行。
 
 ## [0.1.1] - 2026-07-30
 
@@ -43,5 +52,7 @@
 - 提供 `doctor`、`dry-run`、`push` 命令和 macOS launchd 30 分钟自动刷新模板。
 - 推送前检查设备状态，推送后等待真实渲染变化，并对凭据和日志执行防泄漏检查。
 
+[Unreleased]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/zzzhizhia/vibe-usage-quote0/releases/tag/v0.1.1
 [0.1.0]: https://www.npmjs.com/package/vibe-usage-quote0/v/0.1.0
