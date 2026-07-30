@@ -7,6 +7,7 @@ const ALLOWED_FILES = new Set([
   '.gitignore',
   'LICENSE',
   'README.md',
+  'CHANGELOG.md',
   'PROGRESS.md',
   'BLOCKED.md',
 ]);
