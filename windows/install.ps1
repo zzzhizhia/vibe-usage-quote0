@@ -8,6 +8,7 @@ param(
 . (Join-Path $PSScriptRoot 'common.ps1')
 
 try {
+  Assert-PersistentScheduledEnvironment
   if ([string]::IsNullOrWhiteSpace($ConfigPath)) {
     $ConfigPath = Get-WindowsQuoteConfigPath
   }

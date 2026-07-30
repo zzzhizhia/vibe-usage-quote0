@@ -134,9 +134,14 @@ test('Windows 运行器合同保留失败码且不记录子进程输出', () => 
 });
 
 test('Windows 安装与卸载合同限定当前用户任务', () => {
+  const common = readFileSync(join(projectRoot, 'windows', 'common.ps1'), 'utf8');
   const installer = readFileSync(join(projectRoot, 'windows', 'install.ps1'), 'utf8');
   const uninstaller = readFileSync(join(projectRoot, 'windows', 'uninstall.ps1'), 'utf8');
 
+  assert.match(common, /function Assert-PersistentScheduledEnvironment/);
+  assert.ok(
+    installer.indexOf('Assert-PersistentScheduledEnvironment') < installer.indexOf('& $resolvedCli doctor'),
+  );
   assert.ok(installer.indexOf('& $resolvedCli doctor') < installer.indexOf('Register-ScheduledTask'));
   assert.match(installer, /New-TimeSpan -Seconds 1800/);
   assert.match(installer, /-LogonType Interactive/);

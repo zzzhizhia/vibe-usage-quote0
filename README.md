@@ -68,6 +68,15 @@ chmod 600 ~/.config/vibe-usage-quote0/config.json
 
 Quote 配置默认位于 `%APPDATA%\vibe-usage-quote0\config.json`，渲染图默认写入 `%LOCALAPPDATA%\vibe-usage-quote0\quote0-render.png`。如果显式设置了 `XDG_CONFIG_HOME` 或 `XDG_DATA_HOME`，仍分别优先使用 XDG 路径；缺少 APPDATA/LOCALAPPDATA 时回退到 USERPROFILE，连 USERPROFILE 也缺失时会明确失败。
 
+计划任务不会继承只在当前 PowerShell 进程中设置的 XDG 变量。需要让自动刷新使用 XDG 时，先持久化为当前用户环境变量，再打开新的 PowerShell 会话；路径不是秘密，不要在这些变量中放 key：
+
+```powershell
+[Environment]::SetEnvironmentVariable('XDG_CONFIG_HOME', $env:XDG_CONFIG_HOME, 'User')
+[Environment]::SetEnvironmentVariable('XDG_DATA_HOME', $env:XDG_DATA_HOME, 'User')
+```
+
+安装器会比较当前进程与用户/机器级 XDG 值；仅当前进程存在或值不一致时会拒绝创建任务，避免 `doctor` 与后台任务读取不同配置。
+
 在 Windows PowerShell 5.1+ 中创建配置：
 
 ```powershell

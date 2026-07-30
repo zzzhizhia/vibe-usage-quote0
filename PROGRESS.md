@@ -36,6 +36,15 @@
 - 未改本机全局安装、launchd/任务计划程序、真实设备、远端仓库或 npm；未改版本/tag，未推送/发布。
 - 硬指标 1 与三平台门禁仍缺真实目的端证据，详见置顶 `BLOCKED.md`；本地结果不得表述为 Windows 或真机完成。
 
+## Windows 适配工作轮 6/6：续做审计与 XDG 调度一致性（完成，按轮次停止）
+
+- 先读取本文件续做并核对 `90130a7` 后工作树干净；未重跑已完成实现步骤。
+- 第 2 次只读环境复核：无 Windows VM 工具；Docker/OrbStack 为 Linux，CrossOver 为兼容层且只有 Steam bottle，均不能提供真实 Windows 10/11 证据，已补入 `BLOCKED.md`。
+- 审计发现会话级 XDG 会让安装时 `doctor` 与 Task Scheduler 后台读取不同目录；先加静态合同，旧实现定向测试 5/6、1 失败。
+- 新增安装前持久化环境检查：显式 XDG 必须与用户或机器级环境一致，否则给出无秘密的当前用户持久化命令并拒绝创建任务；默认 APPDATA/LOCALAPPDATA 不受影响。
+- 修复后定向测试 6/6、fail/skip/todo=0；README 已补充计划任务的 XDG 持久化要求。完成最终门禁与本地提交后停止，不冒充外部完成。
+- 第 6/6 轮最终门禁：build 11 JS；test 53/53 且 fail/skip/todo=0；security 37/0/0；17 文件 tarball；launchd lint、CI YAML、diff check、冻结文件和零运行时依赖检查全部通过。
+
 ## 工作轮 1/6：任务 0 前置检查（完成）
 
 - `pwd`：`/Users/zzzhizhi/Developer/zzzhizhia/vibe-usage-quote0`

@@ -71,6 +71,41 @@ function Get-WindowsDataDirectory {
   throw 'Windows data directory is unavailable: LOCALAPPDATA and USERPROFILE are missing.'
 }
 
+function Assert-PersistentScheduledEnvironment {
+  foreach ($name in @('XDG_CONFIG_HOME', 'XDG_DATA_HOME')) {
+    $processValue = [Environment]::GetEnvironmentVariable(
+      $name,
+      [EnvironmentVariableTarget]::Process
+    )
+    if ([string]::IsNullOrWhiteSpace($processValue)) {
+      continue
+    }
+
+    $userValue = [Environment]::GetEnvironmentVariable(
+      $name,
+      [EnvironmentVariableTarget]::User
+    )
+    $machineValue = [Environment]::GetEnvironmentVariable(
+      $name,
+      [EnvironmentVariableTarget]::Machine
+    )
+    $matchesUser = [string]::Equals(
+      $processValue,
+      $userValue,
+      [StringComparison]::OrdinalIgnoreCase
+    )
+    $matchesMachine = [string]::Equals(
+      $processValue,
+      $machineValue,
+      [StringComparison]::OrdinalIgnoreCase
+    )
+    if (-not $matchesUser -and -not $matchesMachine) {
+      $command = "[Environment]::SetEnvironmentVariable('$name', `$env:$name, 'User')"
+      throw "$name is set only for this process, so Task Scheduler would not inherit it. Run: $command ; then rerun the installer."
+    }
+  }
+}
+
 function Assert-QuoteConfigAcl {
   param(
     [Parameter(Mandatory = $true)]
