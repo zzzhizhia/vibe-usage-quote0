@@ -1,0 +1,83 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { runCli } from '../src/index.js';
+
+const projectRoot = resolve(import.meta.dirname, '..');
+
+function runFixture(t, scenario) {
+  const root = mkdtempSync(join(tmpdir(), `vibe-usage-quote0-setup-fixture-${scenario}-`));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const result = spawnSync(process.execPath, ['src/index.js', 'setup'], {
+    cwd: projectRoot,
+    env: {
+      ...process.env,
+      NODE_ENV: 'test',
+      VIBE_USAGE_QUOTE0_SETUP_FIXTURE: scenario,
+      VIBE_USAGE_QUOTE0_SETUP_FIXTURE_ROOT: root,
+    },
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  return {
+    ...result,
+    root,
+    vibePath: join(root, 'home', '.vibe-usage', 'config.json'),
+    quotePath: join(root, 'appdata', 'vibe-usage-quote0', 'config.json'),
+  };
+}
+
+test('CLI help 列出 setup 命令', async () => {
+  const output = [];
+  await runCli(['--help'], { stdout: (line) => output.push(line) });
+  assert.match(output.join('\n'), /vibe-usage-quote0 setup/);
+});
+
+test('CLI setup 只负责编排并拒绝命令行秘密参数', async () => {
+  let calls = 0;
+  await assert.rejects(
+    runCli(['setup', 'secret-on-argv'], { setupRunner: async () => { calls += 1; } }),
+    /不接受命令行参数/,
+  );
+  assert.equal(calls, 0);
+
+  const result = await runCli(['setup'], {
+    env: {},
+    setupOptions: { io: { isTTY: true } },
+    setupRunner: async (options) => {
+      calls += 1;
+      assert.equal(options.io.isTTY, true);
+      return { configured: true };
+    },
+  });
+  assert.deepEqual(result, { configured: true });
+  assert.equal(calls, 1);
+});
+
+test('CLI setup 打包测试入口完成安全配置、push 与安装阶段', (t) => {
+  const result = runFixture(t, 'success');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(existsSync(result.vibePath), true);
+  assert.equal(existsSync(result.quotePath), true);
+  assert.match(result.stdout, /真实 push 已确认渲染变化/);
+  assert.match(result.stdout, /setup_fixture_completed=true/);
+  assert.doesNotMatch(
+    `${result.stdout}\n${result.stderr}`,
+    /fixture-(?:vibe|quote|device)-placeholder/,
+  );
+});
+
+test('CLI setup 的 401 fixture 非零退出、无配置变化、无秘密输出', (t) => {
+  const result = runFixture(t, '401');
+  assert.equal(result.status, 1);
+  assert.equal(existsSync(result.vibePath), false);
+  assert.equal(existsSync(result.quotePath), false);
+  assert.match(result.stderr, /阶段 凭据验证 失败.*HTTP 401/);
+  assert.doesNotMatch(
+    `${result.stdout}\n${result.stderr}`,
+    /fixture-(?:vibe|quote|device)-placeholder/,
+  );
+});

@@ -4,6 +4,17 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循[语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### Added
+
+- 新增 Windows `vibe-usage-quote0 setup` 交互式向导：隐藏输入凭据、复用或明确替换现有配置、发现并精确选择 `CANVAS_API`、确认脱敏设备目标、执行真实 push，并在确认渲染变化后安装 PT30M 当前用户计划任务。
+- 新增可注入 setup 核心与 Windows tarball CI 场景，覆盖 401 不落盘、秘密不输出、两份配置 ACL、失败回滚和重复安装。
+
+### Changed
+
+- README 将 Windows 新用户快速开始缩减为全局安装与一条 setup 命令；手工 JSON、ACL、`doctor`/`push` 和安装器命令移至高级/故障排查。
+
 ## [0.1.1] - 2026-07-30
 
 ### Added

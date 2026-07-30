@@ -2,8 +2,8 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, win32 } from 'node:path';
 
-const DEFAULT_VIBE_URL = 'https://vibecafe.ai';
-const DEFAULT_QUOTE_URL = 'https://dot.mindreset.tech';
+export const DEFAULT_VIBE_URL = 'https://vibecafe.ai';
+export const DEFAULT_QUOTE_URL = 'https://dot.mindreset.tech';
 
 function readJson(path) {
   if (!existsSync(path)) return null;
@@ -14,8 +14,13 @@ function readJson(path) {
   }
 }
 
-export function vibeConfigPath() {
-  return join(homedir(), '.vibe-usage', 'config.json');
+export function vibeConfigPath(env = process.env, options = {}) {
+  const platform = options.platform ?? process.platform;
+  const joinPath = pathJoin(platform);
+  let home = options.home;
+  if (!home && platform === 'win32') home = env.USERPROFILE;
+  if (!home) home = homedir();
+  return joinPath(home, '.vibe-usage', 'config.json');
 }
 
 function pathJoin(platform) {
@@ -64,8 +69,8 @@ export function isVibeConfigModeInsecure(mode, platform = process.platform) {
   return platform !== 'win32' && mode !== null && (mode & 0o077) !== 0;
 }
 
-export function loadVibeConfig(env = process.env) {
-  const path = vibeConfigPath();
+export function loadVibeConfig(env = process.env, options = {}) {
+  const path = vibeConfigPath(env, options);
   const file = readJson(path) ?? {};
   const mode = fileMode(path);
   const apiKey = env.VIBE_USAGE_API_KEY || file.apiKey;
@@ -75,7 +80,7 @@ export function loadVibeConfig(env = process.env) {
     apiKey,
     apiUrl,
     path,
-    insecureMode: isVibeConfigModeInsecure(mode),
+    insecureMode: isVibeConfigModeInsecure(mode, options.platform ?? process.platform),
   };
 }
 

@@ -8,11 +8,13 @@ import { dataDirectory, loadQuoteConfig, loadVibeConfig } from './config.js';
 import { formatRequestLog, maskIdentifier } from './http.js';
 import { inspectPng } from './png.js';
 import { getCanvasStatus, listDeviceTasks, pushCanvasAndWait, selectCanvasTask } from './quote.js';
+import { runSetup } from './setup.js';
 import { fetchUsage } from './vibe.js';
 
 const HELP = `vibe-usage-quote0
 
 用法：
+  vibe-usage-quote0 setup    交互式安全配置、真实推送并安装 Windows 定时刷新
   vibe-usage-quote0 doctor   检查 Vibe 与 Quote/0 前提
   vibe-usage-quote0 dry-run  获取 Vibe 用量并输出脱敏摘要
   vibe-usage-quote0 push     推送画板并等待渲染状态变化
@@ -88,6 +90,22 @@ export async function runCli(argv = process.argv.slice(2), options = {}) {
   if (command === 'help' || command === '--help' || command === '-h') {
     stdout(HELP.trimEnd());
     return { command: 'help' };
+  }
+  if (command === 'setup') {
+    if (argv.length !== 1) throw new Error('setup 不接受命令行参数；凭据只能在交互式隐藏输入中提供');
+    let setupOptions = {
+      env,
+      logger,
+      fetchImpl: options.fetchImpl,
+      retryOptions: options.retryOptions,
+      ...(options.setupOptions ?? {}),
+    };
+    if (env.NODE_ENV === 'test' && env.VIBE_USAGE_QUOTE0_SETUP_FIXTURE) {
+      const { createSetupFixtureOptions } = await import('./setup/fixture.js');
+      setupOptions = createSetupFixtureOptions(env, setupOptions);
+    }
+    const setupRunner = options.setupRunner ?? runSetup;
+    return setupRunner(setupOptions);
   }
   if (!['doctor', 'dry-run', 'push'].includes(command)) {
     throw new Error(`未知命令：${command}`);

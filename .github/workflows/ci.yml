@@ -68,9 +68,69 @@ jobs:
           $cliPath = (Get-Command vibe-usage-quote0.cmd -CommandType Application | Select-Object -First 1).Source
           & $cliPath --help
           if ($LASTEXITCODE -ne 0) { throw '.cmd --help failed' }
+          $helpOutput = & $cliPath --help | Out-String
+          if ($LASTEXITCODE -ne 0 -or $helpOutput -notmatch 'vibe-usage-quote0 setup') {
+            throw '.cmd setup is missing from help'
+          }
+
+          $fixtureStdout = Join-Path $env:RUNNER_TEMP 'setup-fixture.stdout.txt'
+          $fixtureStderr = Join-Path $env:RUNNER_TEMP 'setup-fixture.stderr.txt'
+          $env:NODE_ENV = 'test'
+          try {
+            $failureRoot = Join-Path $env:RUNNER_TEMP 'vibe-usage-quote0-setup-fixture-401'
+            $env:VIBE_USAGE_QUOTE0_SETUP_FIXTURE = '401'
+            $env:VIBE_USAGE_QUOTE0_SETUP_FIXTURE_ROOT = $failureRoot
+            $failureProcess = Start-Process `
+              -FilePath $cliPath `
+              -ArgumentList 'setup' `
+              -RedirectStandardOutput $fixtureStdout `
+              -RedirectStandardError $fixtureStderr `
+              -Wait `
+              -PassThru `
+              -NoNewWindow
+            if ($failureProcess.ExitCode -ne 1) {
+              throw "setup 401 fixture returned $($failureProcess.ExitCode), expected 1"
+            }
+            $failureConfigs = @(Get-ChildItem -LiteralPath $failureRoot -Filter 'config.json' -Recurse -ErrorAction SilentlyContinue)
+            if ($failureConfigs.Count -ne 0) { throw 'setup 401 fixture changed config' }
+            $failureOutput = (Get-Content -LiteralPath $fixtureStdout -Raw) + (Get-Content -LiteralPath $fixtureStderr -Raw)
+            if ($failureOutput -match 'fixture-(vibe|quote|device)-placeholder') {
+              throw 'setup 401 fixture leaked credential placeholders'
+            }
+
+            $successRoot = Join-Path $env:RUNNER_TEMP 'vibe-usage-quote0-setup-fixture-success'
+            $env:VIBE_USAGE_QUOTE0_SETUP_FIXTURE = 'success'
+            $env:VIBE_USAGE_QUOTE0_SETUP_FIXTURE_ROOT = $successRoot
+            $successProcess = Start-Process `
+              -FilePath $cliPath `
+              -ArgumentList 'setup' `
+              -RedirectStandardOutput $fixtureStdout `
+              -RedirectStandardError $fixtureStderr `
+              -Wait `
+              -PassThru `
+              -NoNewWindow
+            if ($successProcess.ExitCode -ne 0) {
+              throw "setup success fixture returned $($successProcess.ExitCode)"
+            }
+            $successConfigs = @(Get-ChildItem -LiteralPath $successRoot -Filter 'config.json' -Recurse)
+            if ($successConfigs.Count -ne 2) { throw 'setup success fixture did not write two configs' }
+            $successOutput = (Get-Content -LiteralPath $fixtureStdout -Raw) + (Get-Content -LiteralPath $fixtureStderr -Raw)
+            if ($successOutput -notmatch 'setup_fixture_completed=true') {
+              throw 'setup success fixture did not reach completion'
+            }
+            if ($successOutput -match 'fixture-(vibe|quote|device)-placeholder') {
+              throw 'setup success fixture leaked credential placeholders'
+            }
+          } finally {
+            Remove-Item Env:\VIBE_USAGE_QUOTE0_SETUP_FIXTURE -ErrorAction SilentlyContinue
+            Remove-Item Env:\VIBE_USAGE_QUOTE0_SETUP_FIXTURE_ROOT -ErrorAction SilentlyContinue
+            Remove-Item Env:\NODE_ENV -ErrorAction SilentlyContinue
+          }
 
           $packageRoot = Join-Path ((npm root -g).Trim()) 'vibe-usage-quote0'
           $taskName = 'VibeUsageQuote0'
+          $vibeConfigDir = Join-Path $env:USERPROFILE '.vibe-usage'
+          $vibeConfigPath = Join-Path $vibeConfigDir 'config.json'
           $configDir = Join-Path $env:APPDATA 'vibe-usage-quote0'
           $configPath = Join-Path $configDir 'config.json'
           $logPath = Join-Path $env:RUNNER_TEMP 'scheduled-task.log'
@@ -92,19 +152,23 @@ jobs:
               'exit /b 2'
             )
 
+            New-Item -ItemType Directory -Path $vibeConfigDir -Force | Out-Null
             New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+            Set-Content -LiteralPath $vibeConfigPath -Encoding Ascii -Value '{"apiKey":"ci-vibe-placeholder"}'
             Set-Content -LiteralPath $configPath -Encoding Ascii -Value '{"apiKey":"ci-placeholder","deviceId":"ci-device"}'
             $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-            $acl = New-Object Security.AccessControl.FileSecurity
-            $acl.SetOwner($identity.User)
-            $acl.SetAccessRuleProtection($true, $false)
-            $rule = New-Object Security.AccessControl.FileSystemAccessRule(
-              $identity.User,
-              [Security.AccessControl.FileSystemRights]::Modify,
-              [Security.AccessControl.AccessControlType]::Allow
-            )
-            $acl.AddAccessRule($rule)
-            Set-Acl -LiteralPath $configPath -AclObject $acl
+            foreach ($privateConfigPath in @($vibeConfigPath, $configPath)) {
+              $acl = New-Object Security.AccessControl.FileSecurity
+              $acl.SetOwner($identity.User)
+              $acl.SetAccessRuleProtection($true, $false)
+              $rule = New-Object Security.AccessControl.FileSystemAccessRule(
+                $identity.User,
+                [Security.AccessControl.FileSystemRights]::Modify,
+                [Security.AccessControl.AccessControlType]::Allow
+              )
+              $acl.AddAccessRule($rule)
+              Set-Acl -LiteralPath $privateConfigPath -AclObject $acl
+            }
 
             & $powerShell -NoProfile -ExecutionPolicy Bypass -File $installScript -DryRun -NodePath $nodePath -CliPath $cliPath -ConfigPath $configPath
             if ($LASTEXITCODE -ne 0) { throw 'installer dry-run failed' }

@@ -9,10 +9,12 @@ param(
 
 try {
   Assert-PersistentScheduledEnvironment
+  $vibeConfigPath = Get-WindowsVibeConfigPath
+  Assert-PrivateConfigAcl -Path $vibeConfigPath
   if ([string]::IsNullOrWhiteSpace($ConfigPath)) {
     $ConfigPath = Get-WindowsQuoteConfigPath
   }
-  Assert-QuoteConfigAcl -Path $ConfigPath
+  Assert-PrivateConfigAcl -Path $ConfigPath
 
   $resolvedNode = Resolve-ExecutablePath -Path $NodePath -CommandName @('node.exe', 'node')
   $resolvedCli = Resolve-ExecutablePath -Path $CliPath -CommandName @('vibe-usage-quote0.cmd', 'vibe-usage-quote0')

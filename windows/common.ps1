@@ -58,6 +58,13 @@ function Get-WindowsQuoteConfigPath {
   throw 'Windows config directory is unavailable: APPDATA and USERPROFILE are missing.'
 }
 
+function Get-WindowsVibeConfigPath {
+  if (-not [string]::IsNullOrWhiteSpace($env:USERPROFILE)) {
+    return Join-Path (Join-Path $env:USERPROFILE '.vibe-usage') 'config.json'
+  }
+  throw 'Windows Vibe config directory is unavailable: USERPROFILE is missing.'
+}
+
 function Get-WindowsDataDirectory {
   if (-not [string]::IsNullOrWhiteSpace($env:XDG_DATA_HOME)) {
     return Join-Path $env:XDG_DATA_HOME 'vibe-usage-quote0'
@@ -106,14 +113,37 @@ function Assert-PersistentScheduledEnvironment {
   }
 }
 
-function Assert-QuoteConfigAcl {
+function Protect-PrivateConfigAcl {
   param(
     [Parameter(Mandatory = $true)]
     [string]$Path
   )
 
   if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
-    throw "Quote config does not exist: $Path"
+    throw "Private config does not exist: $Path"
+  }
+
+  $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+  $acl = New-Object Security.AccessControl.FileSecurity
+  $acl.SetOwner($identity.User)
+  $acl.SetAccessRuleProtection($true, $false)
+  $rule = New-Object Security.AccessControl.FileSystemAccessRule(
+    $identity.User,
+    [Security.AccessControl.FileSystemRights]::Modify,
+    [Security.AccessControl.AccessControlType]::Allow
+  )
+  $acl.AddAccessRule($rule)
+  Set-Acl -LiteralPath $Path -AclObject $acl
+}
+
+function Assert-PrivateConfigAcl {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$Path
+  )
+
+  if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+    throw "Private config does not exist: $Path"
   }
 
   $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -132,6 +162,14 @@ function Assert-QuoteConfigAcl {
 
   if (-not $acl.AreAccessRulesProtected -or $currentRules.Count -eq 0 -or $otherRules.Count -gt 0) {
     $command = 'icacls "{0}" /reset ; icacls "{0}" /inheritance:r /grant:r "*{1}:(M)"' -f $Path, $currentSid
-    throw "Quote config ACL must allow only the current user. Run: $command ; then rerun the installer."
+    throw "Private config ACL must allow only the current user. Run: $command ; then rerun setup."
   }
+}
+
+function Assert-QuoteConfigAcl {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$Path
+  )
+  Assert-PrivateConfigAcl -Path $Path
 }
