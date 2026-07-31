@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-07-31
+
 ### Fixed
 
 - 修复 Windows 普通用户运行 `enable` 或 `interval` 时，配置 ACL 写入错误要求 `SeSecurityPrivilege` 的问题；现在只更新文件 DACL，不再尝试重设 owner 或写入审计安全描述符。
@@ -82,7 +84,8 @@
 - 提供 `doctor`、`dry-run`、`push` 命令和 macOS launchd 30 分钟自动刷新模板。
 - 推送前检查设备状态，推送后等待真实渲染变化，并对凭据和日志执行防泄漏检查。
 
-[Unreleased]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.1.1...v0.1.2
