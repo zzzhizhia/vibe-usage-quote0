@@ -9,6 +9,7 @@
 ### Fixed
 
 - 修复 Windows 普通用户运行 `enable` 或 `interval` 时，配置 ACL 写入错误要求 `SeSecurityPrivilege` 的问题；现在只更新文件 DACL，不再尝试重设 owner 或写入审计安全描述符。
+- 修复 launchd 模板使用 CRLF 换行时未写入持久化环境变量的问题。
 
 ## [0.3.0] - 2026-07-31
 

@@ -6,6 +6,7 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -26,6 +27,12 @@ function temporaryRoot(t, label) {
 test('macOS enable 生成无秘密 launchd 任务并加载当前用户服务', (t) => {
   const root = temporaryRoot(t, 'launchd-install');
   const plistPath = join(root, 'Library', 'LaunchAgents', 'agent.plist');
+  const templatePath = join(root, 'launchd-template.plist');
+  const template = readFileSync(
+    join(import.meta.dirname, '..', 'launchd', 'com.vibeusage.vibe-usage-quote0.plist'),
+    'utf8',
+  ).replaceAll('\r\n', '\n').replaceAll('\n', '\r\n');
+  writeFileSync(templatePath, template);
   const calls = [];
   const tracker = createChmodTracker();
   const result = installScheduledTask({
@@ -33,6 +40,7 @@ test('macOS enable 生成无秘密 launchd 任务并加载当前用户服务', (
     intervalMinutes: 45,
     home: root,
     plistPath,
+    templatePath,
     uid: 501,
     nodePath: '/opt/node & tools/bin/node',
     cliPath: '/opt/vibe usage/src/index.js',

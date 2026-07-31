@@ -116,7 +116,10 @@ function renderLaunchAgent(intervalMinutes, options = {}) {
     plist = plist.replace(placeholder, xmlEscape(value));
   }
   plist = plist.replace('<integer>1800</integer>', `<integer>${intervalMinutes * 60}</integer>`);
-  plist = plist.replace('</dict>\n</plist>', `${launchdEnvironmentXml(env)}</dict>\n</plist>`);
+  plist = plist.replace(
+    /<\/dict>\r?\n<\/plist>/,
+    `${launchdEnvironmentXml(env)}</dict>\n</plist>`,
+  );
   if (/__[A-Z_]+__/.test(plist)) throw new Error('launchd 模板包含未替换占位符');
   return { plist, stateDirectory };
 }
