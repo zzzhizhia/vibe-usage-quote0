@@ -124,9 +124,16 @@ function Protect-PrivateConfigAcl {
   }
 
   $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-  $acl = New-Object Security.AccessControl.FileSecurity
-  $acl.SetOwner($identity.User)
+  $acl = Get-Acl -LiteralPath $Path
   $acl.SetAccessRuleProtection($true, $false)
+  $existingRules = @($acl.GetAccessRules(
+    $true,
+    $true,
+    [Security.Principal.SecurityIdentifier]
+  ))
+  foreach ($existingRule in $existingRules) {
+    $acl.RemoveAccessRuleSpecific($existingRule)
+  }
   $rule = New-Object Security.AccessControl.FileSystemAccessRule(
     $identity.User,
     [Security.AccessControl.FileSystemRights]::Modify,

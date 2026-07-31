@@ -465,8 +465,12 @@ test('Windows Vibe 路径与两份配置 ACL 调用合同', async (t) => {
   const commonScript = readFileSync(join(import.meta.dirname, '..', 'windows', 'common.ps1'), 'utf8');
   assert.match(setupScript, /Protect-PrivateConfigAcl -Path \$Path/);
   assert.match(setupScript, /Assert-PrivateConfigAcl -Path \$Path/);
+  assert.match(commonScript, /Get-Acl -LiteralPath \$Path/);
   assert.match(commonScript, /SetAccessRuleProtection\(\$true, \$false\)/);
+  assert.match(commonScript, /RemoveAccessRuleSpecific\(\$existingRule\)/);
   assert.match(commonScript, /WindowsIdentity\]::GetCurrent\(\)/);
+  assert.doesNotMatch(commonScript, /New-Object Security\.AccessControl\.FileSecurity/);
+  assert.doesNotMatch(commonScript, /\.SetOwner\(/);
   assert.doesNotMatch(`${setupScript}\n${commonScript}`, /apiKey|deviceId/i);
 });
 

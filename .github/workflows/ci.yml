@@ -137,6 +137,7 @@ jobs:
           $scheduledLogPath = Join-Path $env:LOCALAPPDATA 'vibe-usage-quote0\logs\scheduled-task.log'
           $shimBackup = Join-Path $env:RUNNER_TEMP 'vibe-usage-quote0.cmd.backup'
           $installScript = Join-Path $packageRoot 'windows\install.ps1'
+          $setupAclScript = Join-Path $packageRoot 'windows\setup.ps1'
           $intervalScript = Join-Path $packageRoot 'windows\update-interval.ps1'
           $runScript = Join-Path $packageRoot 'windows\run.ps1'
           $uninstallScript = Join-Path $packageRoot 'windows\uninstall.ps1'
@@ -157,18 +158,9 @@ jobs:
             New-Item -ItemType Directory -Path $configDir -Force | Out-Null
             Set-Content -LiteralPath $vibeConfigPath -Encoding Ascii -Value '{"apiKey":"ci-vibe-placeholder"}'
             Set-Content -LiteralPath $configPath -Encoding Ascii -Value '{"apiKey":"ci-placeholder","deviceId":"ci-device"}'
-            $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
             foreach ($privateConfigPath in @($vibeConfigPath, $configPath)) {
-              $acl = New-Object Security.AccessControl.FileSecurity
-              $acl.SetOwner($identity.User)
-              $acl.SetAccessRuleProtection($true, $false)
-              $rule = New-Object Security.AccessControl.FileSystemAccessRule(
-                $identity.User,
-                [Security.AccessControl.FileSystemRights]::Modify,
-                [Security.AccessControl.AccessControlType]::Allow
-              )
-              $acl.AddAccessRule($rule)
-              Set-Acl -LiteralPath $privateConfigPath -AclObject $acl
+              & $powerShell -NoProfile -ExecutionPolicy Bypass -File $setupAclScript -Path $privateConfigPath
+              if ($LASTEXITCODE -ne 0) { throw 'private config ACL setup failed' }
             }
 
             & $powerShell -NoProfile -ExecutionPolicy Bypass -File $installScript -DryRun -NodePath $nodePath -CliPath $cliPath -ConfigPath $configPath
