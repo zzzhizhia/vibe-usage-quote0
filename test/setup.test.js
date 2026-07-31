@@ -155,6 +155,35 @@ test('setup 全新配置验证后原子写入、真实 push 并安装任务', as
   assert.doesNotMatch(visible, new RegExp(values.device));
 });
 
+for (const platform of ['darwin', 'linux']) {
+  test(`${platform} enable 完成安全配置、真实 push 与当前用户调度安装`, async (t) => {
+    const paths = temporaryPaths(t);
+    const io = scriptedIo({
+      secrets: [
+        `fixture-vibe-${platform}`,
+        `fixture-quote-${platform}`,
+        `fixture-device-${platform}`,
+      ],
+      confirms: [true, true],
+    });
+    const { api } = fakeApi();
+    let installedInterval;
+
+    const result = await runSetup(setupOptions(paths, io, api, {
+      platform,
+      installScheduledTask(intervalMinutes) { installedInterval = intervalMinutes; },
+    }));
+
+    assert.equal(result.configured, true);
+    assert.equal(result.pushed, true);
+    assert.equal(result.scheduled, true);
+    assert.equal(installedInterval, 30);
+    assert.equal(nodeFs.statSync(paths.vibe).mode & 0o777, 0o600);
+    assert.equal(nodeFs.statSync(paths.quote).mode & 0o777, 0o600);
+    assert.match(io.output.join('\n'), /配置完成/);
+  });
+}
+
 test('setup 默认复用两份现有配置且不重复索要凭据', async (t) => {
   const paths = temporaryPaths(t);
   writeJson(paths.vibe, { apiKey: 'existing-vibe-4004', apiUrl: 'https://vibe.example' });

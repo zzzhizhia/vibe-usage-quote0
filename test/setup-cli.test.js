@@ -38,10 +38,12 @@ test('CLI help 列出 enable、disable、update 与 interval 命令', async () =
   assert.match(help, /vibe-usage-quote0 disable/);
   assert.match(help, /vibe-usage-quote0 update/);
   assert.match(help, /vibe-usage-quote0 interval <minutes>/);
+  assert.match(help, /当前平台定时刷新/);
+  assert.doesNotMatch(help, /安装 Windows 定时刷新/);
   assert.doesNotMatch(help, /vibe-usage-quote0 setup/);
 });
 
-test('CLI interval 无需凭据即可安全保存并报告未安装调度任务', async (t) => {
+test('CLI interval 无需凭据即可安全保存并等待 Linux enable 安装调度任务', async (t) => {
   const root = mkdtempSync(join(tmpdir(), 'vibe-usage-quote0-interval-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const output = [];
@@ -56,7 +58,7 @@ test('CLI interval 无需凭据即可安全保存并报告未安装调度任务'
   assert.deepEqual(JSON.parse(readFileSync(path, 'utf8')), { intervalMinutes: 45 });
   assert.equal(statSync(path).mode & 0o777, 0o600);
   assert.match(output.join('\n'), /45 分钟/);
-  assert.match(output.join('\n'), /没有内置调度器/);
+  assert.match(output.join('\n'), /未检测到已安装调度任务/);
 });
 
 test('CLI interval 拒绝缺失、多余与非法分钟参数', async () => {

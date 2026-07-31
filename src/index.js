@@ -16,7 +16,7 @@ import { fetchUsage } from './vibe.js';
 const HELP = `vibe-usage-quote0
 
 用法：
-  vibe-usage-quote0 enable   交互式安全配置、真实推送并安装 Windows 定时刷新
+  vibe-usage-quote0 enable   交互式安全配置、真实推送并安装当前平台定时刷新
   vibe-usage-quote0 disable  解除本工具的定时刷新任务（保留配置与数据）
   vibe-usage-quote0 update   通过 npm 更新至最新版
   vibe-usage-quote0 doctor   检查 Vibe 与 Quote/0 前提
@@ -90,6 +90,8 @@ export async function runCli(argv = process.argv.slice(2), options = {}) {
     if (argv.length !== 1) throw new Error('enable 不接受命令行参数；凭据只能在交互式隐藏输入中提供');
     let enableOptions = {
       env,
+      platform: options.platform,
+      home: options.home,
       logger,
       fetchImpl: options.fetchImpl,
       retryOptions: options.retryOptions,

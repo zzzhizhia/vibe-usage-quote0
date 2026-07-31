@@ -23,10 +23,15 @@ import {
   listDeviceTasks,
   pushCanvasAndWait,
 } from './quote.js';
+import {
+  installScheduledTask,
+  windowsPowerShellEnvironment,
+} from './scheduler.js';
 import { fetchUsage } from './vibe.js';
 
 const WINDOWS_ACL_SCRIPT = fileURLToPath(new URL('../windows/setup.ps1', import.meta.url));
-const WINDOWS_INSTALL_SCRIPT = fileURLToPath(new URL('../windows/install.ps1', import.meta.url));
+
+export { windowsPowerShellEnvironment } from './scheduler.js';
 
 export class SetupCancelledError extends Error {
   constructor(message = 'enable 已取消；未修改配置。') {
@@ -151,14 +156,6 @@ function removeIfPresent(fileSystem, path) {
   if (fileSystem.existsSync(path)) fileSystem.unlinkSync(path);
 }
 
-export function windowsPowerShellEnvironment(env = process.env) {
-  const childEnv = { ...env };
-  for (const name of Object.keys(childEnv)) {
-    if (name.toLowerCase() === 'psmodulepath') delete childEnv[name];
-  }
-  return childEnv;
-}
-
 export function protectWindowsConfig(path, options = {}) {
   const spawn = options.spawnSyncImpl ?? spawnSync;
   const result = spawn('powershell.exe', [
@@ -266,25 +263,12 @@ export function writeConfigsAtomically(entries, options = {}) {
 }
 
 export function installWindowsScheduledTask(options = {}) {
-  const intervalMinutes = normalizeIntervalMinutes(options.intervalMinutes);
-  const spawn = options.spawnSyncImpl ?? spawnSync;
-  const result = spawn('powershell.exe', [
-    '-NoLogo',
-    '-NoProfile',
-    '-NonInteractive',
-    '-ExecutionPolicy',
-    'Bypass',
-    '-File',
-    options.scriptPath ?? WINDOWS_INSTALL_SCRIPT,
-    '-IntervalMinutes',
-    String(intervalMinutes),
-  ], {
-    encoding: 'utf8',
-    windowsHide: true,
-    env: windowsPowerShellEnvironment(options.processEnv),
+  return installScheduledTask({
+    ...options,
+    platform: 'win32',
+    env: options.processEnv ?? options.env,
+    windowsScriptPath: options.scriptPath ?? options.windowsScriptPath,
   });
-  if (result.error) throw new Error(`无法启动 Windows 计划任务安装器：${result.error.message}`);
-  if (result.status !== 0) throw new Error('Windows 计划任务安装失败');
 }
 
 function existingSummary(io, label, path, config, fields) {
@@ -378,8 +362,8 @@ async function selectCanvas(response, existingTaskKey, io) {
 
 async function runSetupCore(options, secrets) {
   const platform = options.platform ?? process.platform;
-  if (platform !== 'win32') {
-    throw new SetupStageError('平台检查', '第一版 enable 仅支持 Windows 10/11；现有 doctor/dry-run/push 保持可用');
+  if (!['darwin', 'linux', 'win32'].includes(platform)) {
+    throw new SetupStageError('平台检查', `enable 暂不支持当前平台：${platform}`);
   }
   const io = options.io ?? createTerminalIo();
   if (!io.isTTY) {
@@ -514,12 +498,17 @@ async function runSetupCore(options, secrets) {
 
   try {
     if (options.installScheduledTask) await options.installScheduledTask(intervalMinutes);
-    else installWindowsScheduledTask({ ...options, intervalMinutes });
+    else installScheduledTask({ ...options, env, platform, intervalMinutes });
   } catch (error) {
+    const scheduler = platform === 'darwin'
+      ? 'macOS launchd'
+      : platform === 'linux'
+        ? 'Linux systemd 用户服务'
+        : 'Windows 任务计划程序';
     throw new SetupStageError(
       '计划任务安装',
       `${redactText(error?.message, secrets)}；有效配置与已确认的 push 均保留`,
-      '修复 Windows 任务计划程序问题后重新运行 vibe-usage-quote0 enable',
+      `修复 ${scheduler} 问题后重新运行 vibe-usage-quote0 enable`,
     );
   }
   io.write(`配置完成：真实 push 已确认，每 ${intervalMinutes} 分钟的当前用户计划任务已安装。`);

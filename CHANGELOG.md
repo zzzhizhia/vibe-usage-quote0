@@ -6,6 +6,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- `vibe-usage-quote0 enable` 现已支持 macOS 与 Linux：macOS 自动安装当前用户 launchd 任务，Linux 自动安装无需 root 的 systemd user timer。
+- Linux 的 `interval` 与 `disable` 现可更新和解除本项目的 systemd 用户级自动刷新。
+
+### Changed
+
+- README 改为 macOS/Linux 优先的三平台一键配置流程，删除 JSON、权限和调度器的繁杂手工安装步骤。
+
 ## [0.2.0] - 2026-07-31
 
 ### Added

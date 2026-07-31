@@ -4,105 +4,39 @@
 
 ![Vibe Usage 在 Quote/0 上的用量画板示例](https://raw.githubusercontent.com/zzzhizhia/vibe-usage-quote0/main/artifacts/quote0-render-4x.png)
 
-## 快速开始（Windows 10/11）
+## 快速开始
+
+开始前，请在 Dot. App 内容工坊把“画板 API”加入 Quote/0 的设备循环任务，并保持设备在线。
+
+### macOS/Linux
+
+需要 Node.js 20+。Linux 自动刷新还需要可用的 systemd 用户会话。
 
 ```bash
 npm install -g vibe-usage-quote0
 vibe-usage-quote0 enable
 ```
 
-`enable` 会在交互式终端中隐藏读取 Vibe API Key、Dot API Key 和设备 ID，沿用默认 API URL，发现设备上的 `CANVAS_API`，用脱敏标识要求你确认精确目标。只有凭据与目标验证通过才会安全写入配置；只有真实 push 确认渲染变化后，才会安装当前用户、Limited 的 Windows 计划任务。刷新间隔默认 30 分钟，可在 enable 前后通过 `vibe-usage-quote0 interval <minutes>` 调整。凭据不会进入命令行参数或任务定义。
+### Windows 10/11
 
-已有配置默认复用，不会重复索要凭据；选择替换时必须再次明确确认。新凭据验证失败不会覆盖旧配置。设备休眠或任务安装失败时，有效配置会保留，命令非零退出并给出可重跑的 `vibe-usage-quote0 enable`。
-
-## 要求
-
-- Windows 10/11、Windows PowerShell 5.1 和 Node.js 20+
-- Vibe API Key、Dot API Key 与 Quote/0 设备 ID
-- Quote/0 设备在线，并已在 Dot. App 内容工坊把“画板 API”加入设备循环任务
-
-首版 `enable` 聚焦 Windows；macOS/Linux 的现有手工配置、`doctor`、`push` 与 launchd 流程保持不变，见下方高级说明。项目使用 Node.js ESM、内置 `fetch`/`node:test`，没有运行时依赖。
-
-## 高级/故障排查
-
-以下内容用于 macOS/Linux、手工检查或 enable 失败后的定向排查，不是 Windows 新用户的必经流程。临时 `npx` 路径不适合自动刷新；计划任务应使用全局安装。
-
-### macOS/Linux 手工配置
-
-Vibe 凭据沿用：
-
-```text
-~/.vibe-usage/config.json
-```
-
-环境变量 `VIBE_USAGE_API_KEY`、`VIBE_USAGE_API_URL` 可逐项覆盖文件配置。macOS/Linux 首次读取权限宽于 `0600` 的现有文件时会静默收紧为 `0600`；若操作系统拒绝修改权限，程序会停止而不是继续使用暴露的凭据。Windows 使用下述当前用户专属 ACL，不执行 Unix `chmod`。
-
-Quote 凭据优先从环境变量读取：
-
-```bash
-export QUOTE0_API_KEY='你的 Quote API key'
-export QUOTE0_DEVICE_ID='你的设备 ID'
-export QUOTE0_TASK_KEY='可选；多个 CANVAS_API 画板时必填'
-```
-
-也可以由用户主动创建 XDG 配置文件：
-
-```bash
-mkdir -p ~/.config/vibe-usage-quote0
-chmod 700 ~/.config/vibe-usage-quote0
-$EDITOR ~/.config/vibe-usage-quote0/config.json
-chmod 600 ~/.config/vibe-usage-quote0/config.json
-```
-
-```json
-{
-  "apiKey": "你的 Quote API key",
-  "deviceId": "你的设备 ID",
-  "taskKey": "可选；多个 CANVAS_API 画板时必填"
-}
-```
-
-配置文件权限不是精确的 `0600` 时，程序拒绝读取。不要把真实凭据写进仓库、plist 或日志。
-
-### Windows 手工配置
-
-Vibe 配置沿用 `%USERPROFILE%\.vibe-usage\config.json`；Quote 配置默认位于 `%APPDATA%\vibe-usage-quote0\config.json`，渲染图默认写入 `%LOCALAPPDATA%\vibe-usage-quote0\quote0-render.png`。如果显式设置了 `XDG_CONFIG_HOME` 或 `XDG_DATA_HOME`，仍分别优先使用 XDG 路径；缺少 APPDATA/LOCALAPPDATA 时回退到 USERPROFILE，连 USERPROFILE 也缺失时会明确失败。
-
-Windows 的 Unix mode 没有 ACL 含义，因此 CLI 不会显示 macOS/Linux 的 `0600` 警告；两份凭据文件应改用当前用户专属 ACL。
-
-计划任务不会继承只在当前 PowerShell 进程中设置的 XDG 变量。需要让自动刷新使用 XDG 时，先持久化为当前用户环境变量，再打开新的 PowerShell 会话；路径不是秘密，不要在这些变量中放 key：
+需要 Node.js 20+ 和 Windows PowerShell 5.1+。
 
 ```powershell
-[Environment]::SetEnvironmentVariable('XDG_CONFIG_HOME', $env:XDG_CONFIG_HOME, 'User')
-[Environment]::SetEnvironmentVariable('XDG_DATA_HOME', $env:XDG_DATA_HOME, 'User')
+npm install -g vibe-usage-quote0
+vibe-usage-quote0 enable
 ```
 
-安装器会比较当前进程与用户/机器级 XDG 值；仅当前进程存在或值不一致时会拒绝创建任务，避免 `doctor` 与后台任务读取不同配置。
+`enable` 会在交互式终端中隐藏读取 Vibe API Key、Dot API Key 和设备 ID，然后自动完成：
 
-在 Windows PowerShell 5.1+ 中创建配置：
+1. 验证 Vibe 1 日与 7 日用量接口及 Dot/Quote 凭据。
+2. 发现设备上的 `CANVAS_API`；存在多个画板时要求按脱敏编号选择，不猜测目标。
+3. 原子写入受保护的配置，不把凭据放进命令参数、日志或定时任务。
+4. 执行一次真实 push，等待最多 90 秒并确认渲染确实发生变化。
+5. 安装当前用户的 30 分钟自动刷新：macOS 使用 launchd，Linux 使用 systemd user timer，Windows 使用 Limited 计划任务。
 
-```powershell
-$ConfigDir = Join-Path $env:APPDATA 'vibe-usage-quote0'
-$ConfigPath = Join-Path $ConfigDir 'config.json'
-$VibeConfigPath = Join-Path $env:USERPROFILE '.vibe-usage\config.json'
-New-Item -ItemType Directory -Path $ConfigDir -Force | Out-Null
-notepad.exe $ConfigPath
-```
+已有配置默认复用；替换时必须再次确认。新凭据验证失败不会覆盖旧配置。设备休眠或调度安装失败时，有效配置会保留，命令会明确说明失败阶段；修复后重新运行同一条 `vibe-usage-quote0 enable` 即可。
 
-文件内容与前述 JSON 相同。保存后移除继承 ACL，只允许当前用户访问；命令不包含 key，也不会修改文件内容：
-
-```powershell
-$CurrentSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-foreach ($PrivateConfig in @($VibeConfigPath, $ConfigPath)) {
-  icacls.exe $PrivateConfig /reset
-  icacls.exe $PrivateConfig /inheritance:r /grant:r "*$($CurrentSid):(M)"
-  Get-Acl -LiteralPath $PrivateConfig | Format-List Owner,AreAccessRulesProtected,Access
-}
-```
-
-计划任务安装器会 fail-closed 检查 Vibe 与 Quote 两份配置的 ACL 均已禁止继承、当前用户有允许规则且没有其他主体的允许规则，否则输出上述 `icacls` 修复方法并拒绝安装。不要把 key 或设备 ID 放进任务参数、环境脚本或日志。
-
-### 手工命令
+## 常用命令
 
 ```bash
 vibe-usage-quote0 doctor
@@ -115,101 +49,41 @@ vibe-usage-quote0 update
 
 | 命令 | 作用 |
 |---|---|
-| `doctor` | 读取 Vibe 1 日/7 日数据，确认目标 `CANVAS_API` 与设备可用状态 |
-| `dry-run` | 只访问 Vibe，输出聚合数值、Top 3 与 Canvas payload 脱敏摘要 |
-| `push` | 推送 Canvas，并在 90 秒内等待真实渲染变化 |
-| `interval <minutes>` | 配置自动推送间隔；默认 30，支持 1-44640 的整数分钟 |
-| `disable` | 解除本工具的 Windows/macOS 定时任务，保留配置、日志和渲染图 |
-| `update` | 通过 npm 全局安装 `vibe-usage-quote0@latest` 更新自身 |
+| `enable` | 安全配置、真实推送并安装当前平台的自动刷新 |
+| `doctor` | 读取 Vibe 1 日/7 日数据，确认目标画板与设备状态 |
+| `dry-run` | 只访问 Vibe，输出聚合数值与 Canvas payload 脱敏摘要 |
+| `push` | 立即推送，并等待真实渲染变化 |
+| `interval <minutes>` | 设置 1-44640 分钟的刷新间隔，并更新已安装的调度任务 |
+| `disable` | 解除本工具的定时任务，保留配置、日志和渲染图 |
+| `update` | 通过 npm 全局更新至最新版 |
 
-`push` 会先通过 `/loop/list` 精确选择画板，再用 `/status` 检查设备。休眠、离线、关机或未知状态会在 Canvas POST 前失败；设备可用时才推送。只有 `renderInfo.last`、渲染图 URL 或同一 URL 的图片内容指纹发生变化才算成功。
+`push` 会先精确选择画板，再检查设备状态。休眠、离线、关机或未知状态会在 Canvas POST 前失败。只有 `renderInfo.last`、渲染图 URL 或同一 URL 的图片内容指纹发生变化才算成功；HTTP 2xx 本身不算渲染完成。
 
-`interval` 不读取或验证 API 凭据，也不会立即 push。它会以 `intervalMinutes` 保存到 Quote 配置；Windows/macOS 已安装调度任务存在时会立即同步更新，不存在时由后续 enable 或安装流程采用。Linux 会保存配置，但不内置调度器管理。
+## 平台与安全
 
-`disable` 可重复执行，只会解除固定名称的本项目任务，不删除配置、日志或渲染图。`update` 等价于安全参数化执行 `npm install -g vibe-usage-quote0@latest`；全局 npm 目录没有写权限时会非零退出，并保留 npm 的错误原因。
+| 平台 | 自动刷新 | 配置保护 |
+|---|---|---|
+| macOS | 当前用户 launchd LaunchAgent | 配置文件严格为 `0600` |
+| Linux | 当前用户 systemd service + timer，无需 root | 配置文件严格为 `0600` |
+| Windows 10/11 | 当前用户、Limited 计划任务 | 关闭 ACL 继承，仅允许当前用户 |
 
-如果状态返回渲染图 URL，macOS/Linux 图片会保存到 `${XDG_DATA_HOME:-~/.local/share}/vibe-usage-quote0/quote0-render.png`，Windows 保存到 `%LOCALAPPDATA%\vibe-usage-quote0\quote0-render.png`；两者都会检查尺寸、彩色像素、墨点覆盖率和画布边缘。没有 URL 时只报告“API 已确认，视觉未确认”。
+Vibe 配置写入 `~/.vibe-usage/config.json`。Quote 配置在 macOS/Linux 写入 `${XDG_CONFIG_HOME:-~/.config}/vibe-usage-quote0/config.json`，Windows 默认写入 `%APPDATA%\vibe-usage-quote0\config.json`。这些文件由 `enable` 自动创建和保护，无需手工编辑。
 
-### Windows 手动验证
+macOS/Linux 的渲染图保存到 `${XDG_DATA_HOME:-~/.local/share}/vibe-usage-quote0/quote0-render.png`；Windows 默认保存到 `%LOCALAPPDATA%\vibe-usage-quote0\quote0-render.png`。下载后会检查 296×152 尺寸、黑白像素、墨点覆盖率和画布边缘。没有可下载 URL 时只报告“API 已确认，视觉未确认”。
 
-全局安装会生成 npm 的 `.cmd` 入口。先在 Windows PowerShell 中逐项验证，不要跳过 `doctor`：
+macOS launchd 和 Linux systemd unit 会保存显式设置的 XDG 路径，但不会保存 API Key 或设备 ID。请使用全局安装；不要用临时 `npx` 路径创建长期自动刷新任务。
 
-```powershell
-Get-Command node,vibe-usage-quote0.cmd
-node.exe -v
-vibe-usage-quote0.cmd --help
-vibe-usage-quote0.cmd doctor
-vibe-usage-quote0.cmd dry-run
-vibe-usage-quote0.cmd push
-```
+## 故障排查
 
-只有 `push` 显示 Canvas HTTP 2xx、90 秒内渲染变化，且下载图检查为 296×152 黑白，才算手动链路完成。
-
-### Windows 手工安装定时更新
-
-安装脚本先检查当前用户专属 ACL，再要求全局 CLI 的 `doctor` 成功。随后使用任务计划程序创建 `VibeUsageQuote0`：当前用户、无需管理员、仅交互登录会话、Limited 权限，默认每 30 分钟运行。安装器读取 Quote 配置中的 `intervalMinutes`；也可先运行 `vibe-usage-quote0 interval 60` 等命令调整。安装时会解析全局 Node 与 `vibe-usage-quote0.cmd` 的绝对路径并写入不含秘密的任务动作，不使用 `npx`；全局安装路径变化后重新运行安装器即可更新，重复安装同一路径也安全。
-
-```powershell
-$PackageRoot = Join-Path ((npm root -g).Trim()) 'vibe-usage-quote0'
-$Installer = Join-Path $PackageRoot 'windows\install.ps1'
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Installer
-```
-
-检查周期、主体、最近结果并手动触发一次：
-
-```powershell
-$Task = Get-ScheduledTask -TaskName 'VibeUsageQuote0'
-$Task | Select-Object TaskName,State,@{Name='Interval';Expression={$_.Triggers.Repetition.Interval}},Principal,Actions
-Start-ScheduledTask -TaskName 'VibeUsageQuote0'
-Get-ScheduledTaskInfo -TaskName 'VibeUsageQuote0'
-```
-
-默认配置下 `Interval` 应为 `PT30M`；例如配置 60 分钟后应为 `PT1H`。成功运行后的 `LastTaskResult` 应为 `0`。任务日志只写开始时间和子进程退出码，不记录 CLI 输出或 key，默认位于 `%LOCALAPPDATA%\vibe-usage-quote0\logs\scheduled-task.log`；显式 `XDG_DATA_HOME` 时随之迁移。若退出码非零，请在交互式 PowerShell 手动运行 `doctor` 和 `push` 查看脱敏错误。
-
-解除定时任务只删除本项目的 `VibeUsageQuote0` 任务，不删除配置、日志或图片：
-
-```powershell
-vibe-usage-quote0 disable
-Get-ScheduledTask -TaskName 'VibeUsageQuote0' -ErrorAction SilentlyContinue
-```
-
-### macOS 定时更新
-
-[launchd/com.vibeusage.vibe-usage-quote0.plist](launchd/com.vibeusage.vibe-usage-quote0.plist) 是不含凭据和本机路径的 launchd 模板，默认 `StartInterval` 为 1800 秒。计划任务必须使用全局安装；不要引用 `npx` 的临时路径。
-
-先完成全局安装、配置和手动验证：
-
-```bash
-vibe-usage-quote0 doctor
-vibe-usage-quote0 push
-```
-
-再生成本机 plist：
-
-```bash
-PLIST="$HOME/Library/LaunchAgents/com.vibeusage.vibe-usage-quote0.plist"
-STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/vibe-usage-quote0"
-PACKAGE_DIR="$(npm root -g)/vibe-usage-quote0"
-mkdir -p "$HOME/Library/LaunchAgents" "$STATE_DIR"
-cp "$PACKAGE_DIR/launchd/com.vibeusage.vibe-usage-quote0.plist" "$PLIST"
-plutil -replace ProgramArguments.0 -string "$(command -v node)" "$PLIST"
-plutil -replace ProgramArguments.1 -string "$(command -v vibe-usage-quote0)" "$PLIST"
-plutil -replace WorkingDirectory -string "$HOME" "$PLIST"
-plutil -replace StandardOutPath -string "$STATE_DIR/launchd.stdout.log" "$PLIST"
-plutil -replace StandardErrorPath -string "$STATE_DIR/launchd.stderr.log" "$PLIST"
-# 可选：改成 60 分钟；命令会保存配置并更新刚生成的 plist
-vibe-usage-quote0 interval 60
-plutil -lint "$PLIST"
-launchctl bootstrap "gui/$(id -u)" "$PLIST"
-```
-
-launchd 通常不继承交互式 shell 环境变量，因此应使用前述 `0600` Quote 配置文件。稳定自动刷新要求 Quote/0 持续接入电源和网络；电池休眠时程序会在 POST 前停止，launchd 下个周期再重试。
-
-解除定时任务：
-
-```bash
-vibe-usage-quote0 disable
-```
+- `enable 需要交互式终端`：直接在 Terminal、shell 或 PowerShell 窗口中运行，不要通过管道、CI 标准输入或命令参数传递凭据。
+- 没有 `CANVAS_API`：先在 Dot. App 内容工坊把“画板 API”加入该设备循环任务，再重新运行 `enable`。
+- “设备休眠中”或“状态无法确认可用”：唤醒设备，确认持续接电联网后重试；程序不会在不确定状态下推送。
+- “90 秒内未变化”：API 可能已接收，但没有证据证明 Quote/0 完成了新渲染。先在 Dot. App 对 `Vibe Usage` 使用“更多 → 立即显示”，再检查固定内容时段、电源和网络。
+- macOS 调度失败：确认当前命令运行在图形登录用户会话，并查看 `${XDG_STATE_HOME:-~/.local/state}/vibe-usage-quote0/launchd.stderr.log`。
+- Linux 调度失败：确认 `systemctl --user` 可用；容器、精简发行版或没有用户 bus 的会话可在 `enable` 最后选择不安装自动刷新，配置和手动 `push` 仍可使用。
+- Windows 调度失败：确认 PowerShell 5.1+ 可用，并从同一当前用户会话重新运行 `enable`。
+- `401`：Vibe 或 Dot API Key 无效；客户端不会重试。
+- `429`、`5xx` 或网络错误：最多退避重试 3 次，仍失败则非零退出。
 
 ## 开发验证
 
@@ -218,30 +92,6 @@ pnpm build
 pnpm test
 pnpm security-check
 pnpm pack --dry-run
-plutil -lint launchd/com.vibeusage.vibe-usage-quote0.plist
 ```
 
-## 故障排查
-
-`security-check` 会扫描整个项目根目录：发现真实凭据或白名单外文件都会非零退出，而不是只检查预期交付目录。
-
-- `401`：Vibe 或 Quote key 无效；客户端不会重试。
-- `enable 需要交互式终端`：不要通过管道、CI 标准输入或 argv 传递凭据；在 Windows PowerShell 5.1 的交互窗口中重跑 `vibe-usage-quote0 enable`。
-- enable 提示没有 `CANVAS_API`：先在 Dot. App 内容工坊把“画板 API”加入该设备循环任务；多个画板时必须按脱敏编号选择，程序不会猜。
-- enable 已保存配置但设备休眠：唤醒并接通网络后重跑同一条 `vibe-usage-quote0 enable`；现有配置会默认复用。
-- enable 的计划任务安装阶段失败：配置与已确认的真实 push 均会保留；修复任务计划程序或 ACL 后重跑同一条 enable。
-- `429`、`5xx`、网络错误：最多退避重试 3 次，仍失败则非零退出。
-- “多个 CANVAS_API”：设置精确的 `QUOTE0_TASK_KEY`，程序不会猜目标。
-- “设备休眠中”：连接电源或按设备说明唤醒后重试；程序不会把 HTTP 200 误报为设备可用，也不会在休眠状态下发送 Canvas POST。launchd/任务计划程序会在下一个已配置周期再次尝试。
-- “设备状态无法确认可用”：API 返回了未识别状态；为避免错误推送，程序会 fail-closed。先确认设备已唤醒、已接入电源和网络，再运行 `doctor`。
-- “90 秒内未变化”：Canvas POST 可能已接收，但没有证据证明设备完成新渲染，不能算成功。
-- 新渲染图 URL 短暂返回 `404`：通常表示图片仍在生成；程序会继续轮询，不会立即误报失败，直到图片可下载或达到 90 秒上限。
-- 设备显示“活跃中”但持续“90 秒内未变化”：先在 Dot. App 的循环列表中对 `Vibe Usage` 使用“更多 → 立即显示”，确认循环内容能被设备消费；仍无效时重新连接电源或重启设备。固定内容时段会优先于循环内容，必要时同时检查固定内容配置。
-- 只有“API 已确认，视觉未确认”：状态变化已确认，但 API 没返回可下载的渲染图 URL。
-- launchd 无法启动：先核对 plist 中的 Node/CLI 绝对路径，再查看 `${XDG_STATE_HOME:-~/.local/state}/vibe-usage-quote0/launchd.stderr.log`。
-- Windows 任务安装失败：先确认使用 Windows PowerShell 5.1+、`Get-Command node,vibe-usage-quote0.cmd` 都返回绝对路径、Quote 配置 ACL 仅允许当前用户，再重新运行安装器。
-- Windows `LastTaskResult` 非 0：日志只给出退出码；在相同当前用户会话手动运行 `doctor`/`push`。设备必须持续接电联网，休眠时失败是预期的 fail-closed 行为。
-
-## License
-
-MIT
+项目使用 Node.js ESM、内置 `fetch`/`node:test`，没有运行时依赖。`security-check` 会扫描整个项目根目录，发现疑似真实凭据或白名单外文件时非零退出。
