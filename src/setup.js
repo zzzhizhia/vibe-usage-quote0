@@ -29,7 +29,7 @@ const WINDOWS_ACL_SCRIPT = fileURLToPath(new URL('../windows/setup.ps1', import.
 const WINDOWS_INSTALL_SCRIPT = fileURLToPath(new URL('../windows/install.ps1', import.meta.url));
 
 export class SetupCancelledError extends Error {
-  constructor(message = 'setup 已取消；未修改配置。') {
+  constructor(message = 'enable 已取消；未修改配置。') {
     super(message);
     this.name = 'SetupCancelledError';
   }
@@ -37,7 +37,7 @@ export class SetupCancelledError extends Error {
 
 export class SetupStageError extends Error {
   constructor(stage, message, nextCommand) {
-    super(`setup 阶段 ${stage} 失败：${message}${nextCommand ? `\n下一步：${nextCommand}` : ''}`);
+    super(`enable 阶段 ${stage} 失败：${message}${nextCommand ? `\n下一步：${nextCommand}` : ''}`);
     this.name = 'SetupStageError';
     this.stage = stage;
     this.nextCommand = nextCommand;
@@ -244,7 +244,7 @@ export function writeConfigsAtomically(entries, options = {}) {
     const detail = rollbackError
       ? `配置原子写入失败：${cause}；且回滚未能完整完成`
       : `配置原子写入失败：${cause}；原配置已保留`;
-    throw new SetupStageError('配置写入', detail, '检查配置目录权限后重新运行 vibe-usage-quote0 setup');
+    throw new SetupStageError('配置写入', detail, '检查配置目录权限后重新运行 vibe-usage-quote0 enable');
   }
 
   let cleanupError = null;
@@ -260,7 +260,7 @@ export function writeConfigsAtomically(entries, options = {}) {
     throw new SetupStageError(
       '配置写入',
       '新配置已写入，但旧配置的受限安全备份未能清理',
-      '检查配置目录中的 .bak 文件后重新运行 vibe-usage-quote0 setup',
+      '检查配置目录中的 .bak 文件后重新运行 vibe-usage-quote0 enable',
     );
   }
 }
@@ -379,11 +379,11 @@ async function selectCanvas(response, existingTaskKey, io) {
 async function runSetupCore(options, secrets) {
   const platform = options.platform ?? process.platform;
   if (platform !== 'win32') {
-    throw new SetupStageError('平台检查', '第一版 setup 仅支持 Windows 10/11；现有 doctor/dry-run/push 保持可用');
+    throw new SetupStageError('平台检查', '第一版 enable 仅支持 Windows 10/11；现有 doctor/dry-run/push 保持可用');
   }
   const io = options.io ?? createTerminalIo();
   if (!io.isTTY) {
-    throw new SetupStageError('交互检查', 'setup 需要交互式终端，不能在非 TTY 环境输入凭据');
+    throw new SetupStageError('交互检查', 'enable 需要交互式终端，不能在非 TTY 环境输入凭据');
   }
 
   const fileSystem = options.fileSystem ?? nodeFs;
@@ -470,7 +470,7 @@ async function runSetupCore(options, secrets) {
     throw new SetupStageError(
       '真实 push',
       `${redactText(availabilityError.message, secrets)}；有效配置已保留`,
-      '唤醒设备后重新运行 vibe-usage-quote0 setup',
+      '唤醒设备后重新运行 vibe-usage-quote0 enable',
     );
   }
 
@@ -484,14 +484,14 @@ async function runSetupCore(options, secrets) {
     throw new SetupStageError(
       '真实 push',
       `${redactText(error?.message, secrets)}；有效配置已保留，未安装计划任务`,
-      '确认设备已唤醒后重新运行 vibe-usage-quote0 setup',
+      '确认设备已唤醒后重新运行 vibe-usage-quote0 enable',
     );
   }
   if (!pushResult?.changed) {
     throw new SetupStageError(
       '真实 push',
       '未确认渲染变化；有效配置已保留，未安装计划任务',
-      '确认设备已唤醒后重新运行 vibe-usage-quote0 setup',
+      '确认设备已唤醒后重新运行 vibe-usage-quote0 enable',
     );
   }
   io.write('真实 push 已确认渲染变化。');
@@ -502,7 +502,7 @@ async function runSetupCore(options, secrets) {
   } catch (error) {
     if (error instanceof SetupCancelledError) {
       throw new SetupCancelledError(
-        'setup 在计划任务安装前取消；有效配置与已确认的真实 push 已保留，计划任务未安装。下一步：重新运行 vibe-usage-quote0 setup',
+        'enable 在计划任务安装前取消；有效配置与已确认的真实 push 已保留，计划任务未安装。下一步：重新运行 vibe-usage-quote0 enable',
       );
     }
     throw error;
@@ -519,7 +519,7 @@ async function runSetupCore(options, secrets) {
     throw new SetupStageError(
       '计划任务安装',
       `${redactText(error?.message, secrets)}；有效配置与已确认的 push 均保留`,
-      '修复 Windows 任务计划程序问题后重新运行 vibe-usage-quote0 setup',
+      '修复 Windows 任务计划程序问题后重新运行 vibe-usage-quote0 enable',
     );
   }
   io.write(`配置完成：真实 push 已确认，每 ${intervalMinutes} 分钟的当前用户计划任务已安装。`);

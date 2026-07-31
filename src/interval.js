@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, unlinkSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,6 +11,7 @@ import { windowsPowerShellEnvironment, writeConfigsAtomically } from './setup.js
 
 const LAUNCHD_LABEL = 'com.vibeusage.vibe-usage-quote0';
 const WINDOWS_UPDATE_SCRIPT = fileURLToPath(new URL('../windows/update-interval.ps1', import.meta.url));
+const WINDOWS_UNINSTALL_SCRIPT = fileURLToPath(new URL('../windows/uninstall.ps1', import.meta.url));
 
 function runProcess(command, args, options, failureMessage) {
   const spawn = options.spawnSyncImpl ?? spawnSync;
@@ -91,6 +92,70 @@ export function updateInstalledSchedule(intervalMinutes, options = {}) {
   }
 
   return { platform, installed: false, updated: false, unsupported: true };
+}
+
+export function disableSchedule(options = {}) {
+  const platform = options.platform ?? process.platform;
+
+  if (platform === 'win32') {
+    const result = runProcess('powershell.exe', [
+      '-NoLogo',
+      '-NoProfile',
+      '-NonInteractive',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-File',
+      options.windowsScriptPath ?? WINDOWS_UNINSTALL_SCRIPT,
+    ], {
+      ...options,
+      env: windowsPowerShellEnvironment(options.env),
+    }, '无法解除 Windows 计划任务');
+    const output = String(result.stdout);
+    return {
+      platform,
+      disabled: /uninstalled_task=/i.test(output),
+      absent: /task_absent=/i.test(output),
+    };
+  }
+
+  if (platform === 'darwin') {
+    const uid = options.uid ?? process.getuid?.();
+    if (!Number.isInteger(uid)) throw new Error('无法确定当前用户，不能安全解除 launchd 任务');
+
+    const spawn = options.spawnSyncImpl ?? spawnSync;
+    const service = `gui/${uid}/${LAUNCHD_LABEL}`;
+    const printResult = spawn('launchctl', ['print', service], {
+      encoding: 'utf8',
+      env: options.env ?? process.env,
+    });
+    if (printResult.error) throw new Error(`无法检查 launchd 任务：${printResult.error.message}`);
+    const loaded = printResult.status === 0;
+    if (loaded) {
+      runProcess('launchctl', ['bootout', service], options, '无法解除 launchd 任务');
+    }
+
+    const plistPath = launchAgentPath(options);
+    const fileExists = options.existsSyncImpl ?? existsSync;
+    const removeFile = options.unlinkSyncImpl ?? unlinkSync;
+    const installed = fileExists(plistPath);
+    if (installed) {
+      try {
+        removeFile(plistPath);
+      } catch (error) {
+        throw new Error(`launchd 任务已卸载，但无法删除 plist：${error?.message || String(error)}`);
+      }
+    }
+    return {
+      platform,
+      disabled: loaded || installed,
+      loaded,
+      removed: installed,
+      absent: !loaded && !installed,
+      plistPath,
+    };
+  }
+
+  return { platform, disabled: false, absent: true, unsupported: true };
 }
 
 export async function configureInterval(value, options = {}) {

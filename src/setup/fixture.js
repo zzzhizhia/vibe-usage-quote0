@@ -18,7 +18,7 @@ function fixtureIo(output) {
     isTTY: true,
     write(line) {
       output(`${line}\n`);
-      if (String(line).includes('配置完成')) output('setup_fixture_completed=true\n');
+      if (String(line).includes('配置完成')) output('enable_fixture_completed=true\n');
     },
     async secret() { return secrets.shift(); },
     async confirm() { return true; },
@@ -29,16 +29,16 @@ function fixtureIo(output) {
 export function createSetupFixtureOptions(env, baseOptions = {}) {
   const scenario = env.VIBE_USAGE_QUOTE0_SETUP_FIXTURE;
   const root = env.VIBE_USAGE_QUOTE0_SETUP_FIXTURE_ROOT;
-  if (!['success', '401'].includes(scenario)) throw new Error('未知 setup fixture 场景');
+  if (!['success', '401'].includes(scenario)) throw new Error('未知 enable fixture 场景');
   if (!root || !basename(root).startsWith('vibe-usage-quote0-setup-fixture-')) {
-    throw new Error('setup fixture 必须使用专用临时目录');
+    throw new Error('enable fixture 必须使用专用临时目录');
   }
   const paths = {
     vibe: join(root, 'home', '.vibe-usage', 'config.json'),
     quote: join(root, 'appdata', 'vibe-usage-quote0', 'config.json'),
   };
   if (existsSync(paths.vibe) || existsSync(paths.quote)) {
-    throw new Error('setup fixture 拒绝覆盖已有配置');
+    throw new Error('enable fixture 拒绝覆盖已有配置');
   }
   const output = baseOptions.fixtureStdout ?? ((text) => process.stdout.write(text));
   return {

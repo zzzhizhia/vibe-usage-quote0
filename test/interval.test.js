@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { configureInterval, updateInstalledSchedule } from '../src/interval.js';
+import { configureInterval, disableSchedule, updateInstalledSchedule } from '../src/interval.js';
 
 function temporaryConfig(t, value = {}) {
   const root = mkdtempSync(join(tmpdir(), 'vibe-usage-quote0-interval-test-'));
@@ -106,4 +106,77 @@ test('macOS 未安装 launchd plist 时不执行外部命令', () => {
 
   assert.equal(result.installed, false);
   assert.equal(calls, 0);
+});
+
+test('Windows disable 使用定向卸载脚本且可重复执行', () => {
+  const invocations = [];
+  const installed = disableSchedule({
+    platform: 'win32',
+    env: { PATH: 'C:\\Windows', PSModulePath: 'C:\\PowerShell7\\Modules' },
+    windowsScriptPath: 'C:\\package\\windows\\uninstall.ps1',
+    spawnSyncImpl(command, args, options) {
+      invocations.push({ command, args, options });
+      return { status: 0, stdout: 'uninstalled_task=VibeUsageQuote0\n', stderr: '' };
+    },
+  });
+  const absent = disableSchedule({
+    platform: 'win32',
+    windowsScriptPath: 'C:\\package\\windows\\uninstall.ps1',
+    spawnSyncImpl() {
+      return { status: 0, stdout: 'task_absent=VibeUsageQuote0\n', stderr: '' };
+    },
+  });
+
+  assert.equal(installed.disabled, true);
+  assert.equal(absent.disabled, false);
+  assert.equal(absent.absent, true);
+  assert.equal(invocations[0].command, 'powershell.exe');
+  assert.match(invocations[0].args.join(' '), /uninstall\.ps1/);
+  assert.equal(invocations[0].options.env.PSModulePath, undefined);
+});
+
+test('macOS disable 卸载服务并只删除固定 plist', (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'vibe-usage-quote0-disable-test-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const plistPath = join(root, 'agent.plist');
+  writeFileSync(plistPath, '<plist/>\n');
+  const calls = [];
+
+  const result = disableSchedule({
+    platform: 'darwin',
+    plistPath,
+    uid: 501,
+    spawnSyncImpl(command, args) {
+      calls.push([command, args]);
+      return { status: 0, stdout: '', stderr: '' };
+    },
+  });
+
+  assert.equal(result.disabled, true);
+  assert.equal(result.loaded, true);
+  assert.equal(result.removed, true);
+  assert.equal(result.plistPath, plistPath);
+  assert.deepEqual(calls, [
+    ['launchctl', ['print', 'gui/501/com.vibeusage.vibe-usage-quote0']],
+    ['launchctl', ['bootout', 'gui/501/com.vibeusage.vibe-usage-quote0']],
+  ]);
+  assert.throws(() => readFileSync(plistPath, 'utf8'), { code: 'ENOENT' });
+});
+
+test('macOS disable 在任务不存在时不删除其他文件', () => {
+  let removed = false;
+  const result = disableSchedule({
+    platform: 'darwin',
+    plistPath: '/definitely/missing/agent.plist',
+    uid: 501,
+    existsSyncImpl: () => false,
+    unlinkSyncImpl() { removed = true; },
+    spawnSyncImpl() {
+      return { status: 113, stdout: '', stderr: 'service not found' };
+    },
+  });
+
+  assert.equal(result.disabled, false);
+  assert.equal(result.absent, true);
+  assert.equal(removed, false);
 });

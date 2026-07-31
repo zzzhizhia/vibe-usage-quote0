@@ -69,8 +69,8 @@ jobs:
           & $cliPath --help
           if ($LASTEXITCODE -ne 0) { throw '.cmd --help failed' }
           $helpOutput = & $cliPath --help | Out-String
-          if ($LASTEXITCODE -ne 0 -or $helpOutput -notmatch 'vibe-usage-quote0 setup') {
-            throw '.cmd setup is missing from help'
+          if ($LASTEXITCODE -ne 0 -or $helpOutput -notmatch 'vibe-usage-quote0 enable' -or $helpOutput -match 'vibe-usage-quote0 setup') {
+            throw '.cmd help does not expose only the new enable command'
           }
 
           $fixtureStdout = Join-Path $env:RUNNER_TEMP 'setup-fixture.stdout.txt'
@@ -82,20 +82,20 @@ jobs:
             $env:VIBE_USAGE_QUOTE0_SETUP_FIXTURE_ROOT = $failureRoot
             $failureProcess = Start-Process `
               -FilePath $cliPath `
-              -ArgumentList 'setup' `
+              -ArgumentList 'enable' `
               -RedirectStandardOutput $fixtureStdout `
               -RedirectStandardError $fixtureStderr `
               -Wait `
               -PassThru `
               -NoNewWindow
             if ($failureProcess.ExitCode -ne 1) {
-              throw "setup 401 fixture returned $($failureProcess.ExitCode), expected 1"
+              throw "enable 401 fixture returned $($failureProcess.ExitCode), expected 1"
             }
             $failureConfigs = @(Get-ChildItem -LiteralPath $failureRoot -Filter 'config.json' -Recurse -ErrorAction SilentlyContinue)
-            if ($failureConfigs.Count -ne 0) { throw 'setup 401 fixture changed config' }
+            if ($failureConfigs.Count -ne 0) { throw 'enable 401 fixture changed config' }
             $failureOutput = (Get-Content -LiteralPath $fixtureStdout -Raw) + (Get-Content -LiteralPath $fixtureStderr -Raw)
             if ($failureOutput -match 'fixture-(vibe|quote|device)-placeholder') {
-              throw 'setup 401 fixture leaked credential placeholders'
+              throw 'enable 401 fixture leaked credential placeholders'
             }
 
             $successRoot = Join-Path $env:RUNNER_TEMP 'vibe-usage-quote0-setup-fixture-success'
@@ -103,23 +103,23 @@ jobs:
             $env:VIBE_USAGE_QUOTE0_SETUP_FIXTURE_ROOT = $successRoot
             $successProcess = Start-Process `
               -FilePath $cliPath `
-              -ArgumentList 'setup' `
+              -ArgumentList 'enable' `
               -RedirectStandardOutput $fixtureStdout `
               -RedirectStandardError $fixtureStderr `
               -Wait `
               -PassThru `
               -NoNewWindow
             if ($successProcess.ExitCode -ne 0) {
-              throw "setup success fixture returned $($successProcess.ExitCode)"
+              throw "enable success fixture returned $($successProcess.ExitCode)"
             }
             $successConfigs = @(Get-ChildItem -LiteralPath $successRoot -Filter 'config.json' -Recurse)
-            if ($successConfigs.Count -ne 2) { throw 'setup success fixture did not write two configs' }
+            if ($successConfigs.Count -ne 2) { throw 'enable success fixture did not write two configs' }
             $successOutput = (Get-Content -LiteralPath $fixtureStdout -Raw) + (Get-Content -LiteralPath $fixtureStderr -Raw)
-            if ($successOutput -notmatch 'setup_fixture_completed=true') {
-              throw 'setup success fixture did not reach completion'
+            if ($successOutput -notmatch 'enable_fixture_completed=true') {
+              throw 'enable success fixture did not reach completion'
             }
             if ($successOutput -match 'fixture-(vibe|quote|device)-placeholder') {
-              throw 'setup success fixture leaked credential placeholders'
+              throw 'enable success fixture leaked credential placeholders'
             }
           } finally {
             Remove-Item Env:\VIBE_USAGE_QUOTE0_SETUP_FIXTURE -ErrorAction SilentlyContinue

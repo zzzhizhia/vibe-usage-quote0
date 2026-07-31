@@ -491,7 +491,7 @@ test('计划任务安装失败时保留有效配置并给出 setup 重跑命令'
     installScheduledTask() { throw new Error('simulated scheduler failure'); },
   })), (error) => {
     assert.equal(error.stage, '计划任务安装');
-    assert.match(error.nextCommand, /重新运行 vibe-usage-quote0 setup/);
+    assert.match(error.nextCommand, /重新运行 vibe-usage-quote0 enable/);
     return true;
   });
 

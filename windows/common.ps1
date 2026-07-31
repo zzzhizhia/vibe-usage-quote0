@@ -162,7 +162,7 @@ function Assert-PrivateConfigAcl {
 
   if (-not $acl.AreAccessRulesProtected -or $currentRules.Count -eq 0 -or $otherRules.Count -gt 0) {
     $command = 'icacls "{0}" /reset ; icacls "{0}" /inheritance:r /grant:r "*{1}:(M)"' -f $Path, $currentSid
-    throw "Private config ACL must allow only the current user. Run: $command ; then rerun setup."
+    throw "Private config ACL must allow only the current user. Run: $command ; then rerun enable."
   }
 }
 

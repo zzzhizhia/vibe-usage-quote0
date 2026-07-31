@@ -6,16 +6,19 @@ import { aggregateUsage } from './aggregate.js';
 import { buildCanvasPayload, validateCanvasPayload } from './canvas.js';
 import { dataDirectory, loadQuoteConfig, loadVibeConfig } from './config.js';
 import { formatRequestLog, maskIdentifier } from './http.js';
-import { configureInterval } from './interval.js';
+import { configureInterval, disableSchedule } from './interval.js';
 import { inspectPng } from './png.js';
 import { getCanvasStatus, listDeviceTasks, pushCanvasAndWait, selectCanvasTask } from './quote.js';
 import { runSetup } from './setup.js';
+import { updateSelf } from './update.js';
 import { fetchUsage } from './vibe.js';
 
 const HELP = `vibe-usage-quote0
 
 用法：
-  vibe-usage-quote0 setup    交互式安全配置、真实推送并安装 Windows 定时刷新
+  vibe-usage-quote0 enable   交互式安全配置、真实推送并安装 Windows 定时刷新
+  vibe-usage-quote0 disable  解除本工具的定时刷新任务（保留配置与数据）
+  vibe-usage-quote0 update   通过 npm 更新至最新版
   vibe-usage-quote0 doctor   检查 Vibe 与 Quote/0 前提
   vibe-usage-quote0 dry-run  获取 Vibe 用量并输出脱敏摘要
   vibe-usage-quote0 push     推送画板并等待渲染状态变化
@@ -83,21 +86,57 @@ export async function runCli(argv = process.argv.slice(2), options = {}) {
     stdout(HELP.trimEnd());
     return { command: 'help' };
   }
-  if (command === 'setup') {
-    if (argv.length !== 1) throw new Error('setup 不接受命令行参数；凭据只能在交互式隐藏输入中提供');
-    let setupOptions = {
+  if (command === 'enable') {
+    if (argv.length !== 1) throw new Error('enable 不接受命令行参数；凭据只能在交互式隐藏输入中提供');
+    let enableOptions = {
       env,
       logger,
       fetchImpl: options.fetchImpl,
       retryOptions: options.retryOptions,
-      ...(options.setupOptions ?? {}),
+      ...(options.enableOptions ?? {}),
     };
     if (env.NODE_ENV === 'test' && env.VIBE_USAGE_QUOTE0_SETUP_FIXTURE) {
       const { createSetupFixtureOptions } = await import('./setup/fixture.js');
-      setupOptions = createSetupFixtureOptions(env, setupOptions);
+      enableOptions = createSetupFixtureOptions(env, enableOptions);
     }
-    const setupRunner = options.setupRunner ?? runSetup;
-    return setupRunner(setupOptions);
+    const enableRunner = options.enableRunner ?? runSetup;
+    return enableRunner(enableOptions);
+  }
+  if (command === 'disable') {
+    if (argv.length !== 1) throw new Error('用法：vibe-usage-quote0 disable');
+    const disable = options.disableRunner ?? disableSchedule;
+    const result = await disable({
+      env,
+      platform: options.platform,
+      home: options.home,
+      spawnSyncImpl: options.spawnSyncImpl,
+      windowsScriptPath: options.windowsScriptPath,
+      plistPath: options.plistPath,
+      uid: options.uid,
+      existsSyncImpl: options.existsSyncImpl,
+      unlinkSyncImpl: options.unlinkSyncImpl,
+    });
+    if (result.disabled) {
+      stdout('已解除本工具的定时刷新任务；配置、日志和渲染图均已保留。');
+    } else if (result.unsupported) {
+      stdout('当前平台没有本工具内置的定时任务；未修改任何文件。');
+    } else {
+      stdout('未检测到本工具的定时刷新任务；无需处理。');
+    }
+    return { command, ...result };
+  }
+  if (command === 'update') {
+    if (argv.length !== 1) throw new Error('用法：vibe-usage-quote0 update');
+    stdout('正在通过 npm 更新 vibe-usage-quote0...');
+    const updater = options.updateRunner ?? updateSelf;
+    const result = await updater({
+      env,
+      platform: options.platform,
+      spawnSyncImpl: options.spawnSyncImpl,
+      npmCommand: options.npmCommand,
+    });
+    stdout('vibe-usage-quote0 已更新至 npm 最新版。');
+    return { command, ...result };
   }
   if (command === 'interval') {
     if (argv.length !== 2) throw new Error('用法：vibe-usage-quote0 interval <minutes>');
