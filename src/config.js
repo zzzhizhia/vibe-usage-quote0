@@ -1,9 +1,11 @@
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { chmodSync, existsSync, readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, win32 } from 'node:path';
 
 export const DEFAULT_VIBE_URL = 'https://vibecafe.ai';
 export const DEFAULT_QUOTE_URL = 'https://dot.mindreset.tech';
+export const DEFAULT_INTERVAL_MINUTES = 30;
+export const MAX_INTERVAL_MINUTES = 44_640;
 
 function readJson(path) {
   if (!existsSync(path)) return null;
@@ -69,10 +71,56 @@ export function isVibeConfigModeInsecure(mode, platform = process.platform) {
   return platform !== 'win32' && mode !== null && (mode & 0o077) !== 0;
 }
 
+export function hardenVibeConfigMode(path, mode, platform = process.platform, options = {}) {
+  if (!isVibeConfigModeInsecure(mode, platform)) return { mode, hardened: false };
+  const changeMode = options.chmodSyncImpl ?? chmodSync;
+  try {
+    changeMode(path, 0o600);
+  } catch (error) {
+    throw new Error(`无法将 Vibe 配置权限收紧为 0600：${path}：${error?.message || String(error)}`);
+  }
+  const hardenedMode = (options.fileModeImpl ?? fileMode)(path);
+  if (isVibeConfigModeInsecure(hardenedMode, platform)) {
+    throw new Error(`Vibe 配置权限收紧后仍宽于 0600：${path}`);
+  }
+  return { mode: hardenedMode, hardened: true };
+}
+
+export function normalizeIntervalMinutes(value = DEFAULT_INTERVAL_MINUTES) {
+  const normalized = typeof value === 'string' && /^\d+$/.test(value)
+    ? Number(value)
+    : value;
+  if (
+    !Number.isSafeInteger(normalized)
+    || normalized < 1
+    || normalized > MAX_INTERVAL_MINUTES
+  ) {
+    throw new Error(`刷新间隔必须是 1-${MAX_INTERVAL_MINUTES} 的整数分钟`);
+  }
+  return normalized;
+}
+
+export function loadQuoteSettings(env = process.env, options = {}) {
+  const path = quoteConfigPath(env, options);
+  const mode = fileMode(path);
+  assertQuoteConfigMode(path, mode, options.platform ?? process.platform);
+  const value = readJson(path) ?? {};
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(`配置文件必须是 JSON 对象：${path}`);
+  }
+  return { path, value };
+}
+
 export function loadVibeConfig(env = process.env, options = {}) {
   const path = vibeConfigPath(env, options);
-  const file = readJson(path) ?? {};
   const mode = fileMode(path);
+  const permission = hardenVibeConfigMode(
+    path,
+    mode,
+    options.platform ?? process.platform,
+    options,
+  );
+  const file = readJson(path) ?? {};
   const apiKey = env.VIBE_USAGE_API_KEY || file.apiKey;
   const apiUrl = env.VIBE_USAGE_API_URL || file.apiUrl || DEFAULT_VIBE_URL;
   if (!apiKey) throw new Error('缺少 Vibe API key');
@@ -80,20 +128,19 @@ export function loadVibeConfig(env = process.env, options = {}) {
     apiKey,
     apiUrl,
     path,
-    insecureMode: isVibeConfigModeInsecure(mode, options.platform ?? process.platform),
+    insecureMode: false,
+    permissionHardened: permission.hardened,
   };
 }
 
 export function loadQuoteConfig(env = process.env, options = {}) {
-  const path = quoteConfigPath(env, options);
-  const mode = fileMode(path);
-  assertQuoteConfigMode(path, mode, options.platform ?? process.platform);
-  const file = readJson(path) ?? {};
+  const { path, value: file } = loadQuoteSettings(env, options);
   const apiKey = env.QUOTE0_API_KEY || file.apiKey;
   const deviceId = env.QUOTE0_DEVICE_ID || file.deviceId;
   const taskKey = env.QUOTE0_TASK_KEY || file.taskKey;
   const apiUrl = env.QUOTE0_API_URL || file.apiUrl || DEFAULT_QUOTE_URL;
+  const intervalMinutes = normalizeIntervalMinutes(file.intervalMinutes);
   if (!apiKey) throw new Error('缺少 QUOTE0_API_KEY 或 Quote 配置 apiKey');
   if (!deviceId) throw new Error('缺少 QUOTE0_DEVICE_ID 或 Quote 配置 deviceId');
-  return { apiKey, deviceId, taskKey, apiUrl, path };
+  return { apiKey, deviceId, taskKey, apiUrl, intervalMinutes, path };
 }

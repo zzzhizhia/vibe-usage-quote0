@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -30,10 +30,35 @@ function runFixture(t, scenario) {
   };
 }
 
-test('CLI help 列出 setup 命令', async () => {
+test('CLI help 列出 setup 与 interval 命令', async () => {
   const output = [];
   await runCli(['--help'], { stdout: (line) => output.push(line) });
   assert.match(output.join('\n'), /vibe-usage-quote0 setup/);
+  assert.match(output.join('\n'), /vibe-usage-quote0 interval <minutes>/);
+});
+
+test('CLI interval 无需凭据即可安全保存并报告未安装调度任务', async (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'vibe-usage-quote0-interval-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const output = [];
+  const result = await runCli(['interval', '45'], {
+    env: { XDG_CONFIG_HOME: root },
+    platform: 'linux',
+    stdout: (line) => output.push(line),
+  });
+  const path = join(root, 'vibe-usage-quote0', 'config.json');
+
+  assert.equal(result.intervalMinutes, 45);
+  assert.deepEqual(JSON.parse(readFileSync(path, 'utf8')), { intervalMinutes: 45 });
+  assert.equal(statSync(path).mode & 0o777, 0o600);
+  assert.match(output.join('\n'), /45 分钟/);
+  assert.match(output.join('\n'), /没有内置调度器/);
+});
+
+test('CLI interval 拒绝缺失、多余与非法分钟参数', async () => {
+  for (const argv of [['interval'], ['interval', '30', 'extra'], ['interval', '0'], ['interval', '1.5']]) {
+    await assert.rejects(runCli(argv, { env: {}, platform: 'linux' }), /用法|整数分钟/);
+  }
 });
 
 test('CLI setup 只负责编排并拒绝命令行秘密参数', async () => {

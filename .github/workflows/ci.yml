@@ -137,6 +137,7 @@ jobs:
           $scheduledLogPath = Join-Path $env:LOCALAPPDATA 'vibe-usage-quote0\logs\scheduled-task.log'
           $shimBackup = Join-Path $env:RUNNER_TEMP 'vibe-usage-quote0.cmd.backup'
           $installScript = Join-Path $packageRoot 'windows\install.ps1'
+          $intervalScript = Join-Path $packageRoot 'windows\update-interval.ps1'
           $runScript = Join-Path $packageRoot 'windows\run.ps1'
           $uninstallScript = Join-Path $packageRoot 'windows\uninstall.ps1'
           $powerShell = Join-Path $PSHOME 'powershell.exe'
@@ -191,6 +192,12 @@ jobs:
             $task = Get-ScheduledTask -TaskName $taskName
             if ([string]$task.Triggers[0].Repetition.Interval -ne 'PT30M') {
               throw 'scheduled task interval is not PT30M'
+            }
+            & $powerShell -NoProfile -ExecutionPolicy Bypass -File $intervalScript -IntervalMinutes 45
+            if ($LASTEXITCODE -ne 0) { throw 'scheduled task interval update failed' }
+            $task = Get-ScheduledTask -TaskName $taskName
+            if ([string]$task.Triggers[0].Repetition.Interval -ne 'PT45M') {
+              throw 'updated scheduled task interval is not PT45M'
             }
             if ([string]$task.Principal.RunLevel -ne 'Limited') {
               throw 'scheduled task does not use Limited privileges'

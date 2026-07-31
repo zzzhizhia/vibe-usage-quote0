@@ -6,6 +6,7 @@ import { aggregateUsage } from './aggregate.js';
 import { buildCanvasPayload, validateCanvasPayload } from './canvas.js';
 import { dataDirectory, loadQuoteConfig, loadVibeConfig } from './config.js';
 import { formatRequestLog, maskIdentifier } from './http.js';
+import { configureInterval } from './interval.js';
 import { inspectPng } from './png.js';
 import { getCanvasStatus, listDeviceTasks, pushCanvasAndWait, selectCanvasTask } from './quote.js';
 import { runSetup } from './setup.js';
@@ -18,6 +19,7 @@ const HELP = `vibe-usage-quote0
   vibe-usage-quote0 doctor   检查 Vibe 与 Quote/0 前提
   vibe-usage-quote0 dry-run  获取 Vibe 用量并输出脱敏摘要
   vibe-usage-quote0 push     推送画板并等待渲染状态变化
+  vibe-usage-quote0 interval <minutes>  配置推送刷新间隔（默认 30 分钟）
 `;
 
 function defaultLogger(event) {
@@ -97,6 +99,30 @@ export async function runCli(argv = process.argv.slice(2), options = {}) {
     const setupRunner = options.setupRunner ?? runSetup;
     return setupRunner(setupOptions);
   }
+  if (command === 'interval') {
+    if (argv.length !== 2) throw new Error('用法：vibe-usage-quote0 interval <minutes>');
+    const configure = options.intervalRunner ?? configureInterval;
+    const result = await configure(argv[1], {
+      env,
+      platform: options.platform,
+      home: options.home,
+      fileSystem: options.fileSystem,
+      protectFile: options.protectFile,
+      spawnSyncImpl: options.spawnSyncImpl,
+      scheduleUpdater: options.scheduleUpdater,
+      plistPath: options.plistPath,
+      uid: options.uid,
+    });
+    stdout(`推送刷新间隔已设置为 ${result.intervalMinutes} 分钟。`);
+    if (result.schedule?.updated) {
+      stdout('已同步更新当前平台的已安装调度任务。');
+    } else if (result.schedule?.unsupported) {
+      stdout('当前平台没有内置调度器；配置将在支持的安装流程中生效。');
+    } else {
+      stdout('未检测到已安装调度任务；配置将在后续安装时生效。');
+    }
+    return { command, ...result };
+  }
   if (!['doctor', 'dry-run', 'push'].includes(command)) {
     throw new Error(`未知命令：${command}`);
   }
@@ -112,7 +138,6 @@ export async function runCli(argv = process.argv.slice(2), options = {}) {
   };
 
   const vibe = loadVibeConfig(env);
-  if (vibe.insecureMode) stdout('警告：~/.vibe-usage/config.json 权限宽于 0600；未自动修改。');
   const summary = await collectUsage(vibe, runtime);
 
   if (command === 'dry-run') {

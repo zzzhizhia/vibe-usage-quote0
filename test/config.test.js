@@ -1,12 +1,36 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, win32 } from 'node:path';
 import {
+  DEFAULT_INTERVAL_MINUTES,
   assertQuoteConfigMode,
   dataDirectory,
+  hardenVibeConfigMode,
   isVibeConfigModeInsecure,
+  loadQuoteConfig,
+  loadVibeConfig,
+  normalizeIntervalMinutes,
   quoteConfigPath,
 } from '../src/config.js';
+
+test('刷新间隔默认 30 分钟且只接受受支持的整数分钟', () => {
+  assert.equal(normalizeIntervalMinutes(), DEFAULT_INTERVAL_MINUTES);
+  assert.equal(normalizeIntervalMinutes('45'), 45);
+  for (const value of ['0', '-1', '1.5', 'abc', 0, 44_641]) {
+    assert.throws(() => normalizeIntervalMinutes(value), /整数分钟/);
+  }
+});
+
+test('Quote 运行配置在旧配置没有间隔字段时保持 30 分钟默认值', () => {
+  const config = loadQuoteConfig({
+    QUOTE0_API_KEY: 'quote-key',
+    QUOTE0_DEVICE_ID: 'device-id',
+  }, { platform: 'darwin', home: '/path/that/does/not/exist' });
+
+  assert.equal(config.intervalMinutes, 30);
+});
 
 test('渲染图目录遵循 XDG_DATA_HOME', () => {
   assert.equal(
@@ -93,9 +117,40 @@ test('Unix 严格要求 0600，Windows 不使用无意义的 Unix mode', () => {
   assert.doesNotThrow(() => assertQuoteConfigMode('C:\\config.json', 0o666, 'win32'));
 });
 
-test('Vibe 配置只在 Unix mode 有安全意义时警告', () => {
+test('Vibe 配置只在 Unix mode 有安全意义时判定权限过宽', () => {
   assert.equal(isVibeConfigModeInsecure(0o600, 'darwin'), false);
   assert.equal(isVibeConfigModeInsecure(0o644, 'darwin'), true);
   assert.equal(isVibeConfigModeInsecure(0o666, 'win32'), false);
   assert.equal(isVibeConfigModeInsecure(null, 'win32'), false);
+});
+
+test('macOS/Linux 加载现有 Vibe 配置时静默收紧到 0600', (t) => {
+  const home = mkdtempSync(join(tmpdir(), 'vibe-config-mode-'));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const path = join(home, '.vibe-usage', 'config.json');
+  mkdirSync(join(path, '..'), { recursive: true });
+  writeFileSync(path, '{"apiKey":"fixture-vibe-mode-key"}\n', { mode: 0o644 });
+
+  const config = loadVibeConfig({}, { platform: 'darwin', home });
+
+  assert.equal(config.permissionHardened, true);
+  assert.equal(config.insecureMode, false);
+  assert.equal(statSync(path).mode & 0o777, 0o600);
+  assert.match(readFileSync(path, 'utf8'), /fixture-vibe-mode-key/);
+});
+
+test('Vibe 配置权限无法收紧时拒绝继续加载凭据', () => {
+  assert.throws(() => hardenVibeConfigMode('/private/config.json', 0o644, 'darwin', {
+    chmodSyncImpl() { throw new Error('simulated permission denied'); },
+  }), /无法将 Vibe 配置权限收紧.*permission denied/);
+});
+
+test('Windows Vibe 配置不执行 Unix chmod', () => {
+  let chmodCalls = 0;
+  const result = hardenVibeConfigMode('C:\\config.json', 0o666, 'win32', {
+    chmodSyncImpl() { chmodCalls += 1; },
+  });
+
+  assert.equal(chmodCalls, 0);
+  assert.equal(result.hardened, false);
 });

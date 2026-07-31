@@ -6,6 +6,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- 新增 `vibe-usage-quote0 interval <minutes>`，可安全保存 1-44640 分钟的推送刷新间隔，并同步更新已安装的 Windows 计划任务或 macOS launchd 任务。
+
+### Changed
+
+- Windows setup、手工安装器与 macOS launchd 继续默认使用 30 分钟；后续安装会沿用已保存的 `intervalMinutes`。
+- macOS/Linux 加载已有 Vibe 配置时会静默将过宽权限收紧为 `0600`；无法收紧时拒绝继续使用该凭据。
+
 ## [0.1.2] - 2026-07-30
 
 ### Added

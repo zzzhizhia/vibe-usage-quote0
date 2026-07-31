@@ -141,6 +141,7 @@ test('Windows 运行器合同保留失败码且不记录子进程输出', () => 
 test('Windows 安装与卸载合同限定当前用户任务', () => {
   const common = readFileSync(join(projectRoot, 'windows', 'common.ps1'), 'utf8');
   const installer = readFileSync(join(projectRoot, 'windows', 'install.ps1'), 'utf8');
+  const intervalUpdater = readFileSync(join(projectRoot, 'windows', 'update-interval.ps1'), 'utf8');
   const uninstaller = readFileSync(join(projectRoot, 'windows', 'uninstall.ps1'), 'utf8');
 
   assert.match(common, /function Assert-PersistentScheduledEnvironment/);
@@ -148,11 +149,15 @@ test('Windows 安装与卸载合同限定当前用户任务', () => {
     installer.indexOf('Assert-PersistentScheduledEnvironment') < installer.indexOf('& $resolvedCli doctor'),
   );
   assert.ok(installer.indexOf('& $resolvedCli doctor') < installer.indexOf('Register-ScheduledTask'));
-  assert.match(installer, /New-TimeSpan -Seconds 1800/);
+  assert.match(installer, /\[int\]\$IntervalMinutes = 30/);
+  assert.match(installer, /New-TimeSpan -Minutes \$IntervalMinutes/);
   assert.match(installer, /-LogonType Interactive/);
   assert.match(installer, /-RunLevel Limited/);
   assert.match(installer, /-NodePath .* -CliPath/);
   assert.doesNotMatch(installer, /\bnpx\b|apiKey|deviceId/i);
   assert.match(uninstaller, /Unregister-ScheduledTask -TaskName \$script:VibeUsageTaskName/);
   assert.doesNotMatch(uninstaller, /Remove-Item|\bnpx\b/i);
+  assert.match(intervalUpdater, /Set-ScheduledTask/);
+  assert.match(intervalUpdater, /New-TimeSpan -Minutes \$IntervalMinutes/);
+  assert.doesNotMatch(intervalUpdater, /\bnpx\b|apiKey|deviceId/i);
 });

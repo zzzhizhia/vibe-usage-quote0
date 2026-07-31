@@ -122,11 +122,13 @@ test('setup 全新配置验证后原子写入、真实 push 并安装任务', as
   const { api, calls } = fakeApi();
   const aclPaths = [];
   let installs = 0;
+  let installedInterval;
 
   const result = await runSetup(setupOptions(paths, io, api, {
     protectFile(path) { aclPaths.push(path); },
-    installScheduledTask() {
+    installScheduledTask(intervalMinutes) {
       installs += 1;
+      installedInterval = intervalMinutes;
       calls.events.push('install');
     },
   }));
@@ -134,6 +136,7 @@ test('setup 全新配置验证后原子写入、真实 push 并安装任务', as
   assert.deepEqual(calls.days.sort(), [1, 7]);
   assert.equal(calls.pushes, 1);
   assert.equal(installs, 1);
+  assert.equal(installedInterval, 30);
   assert.deepEqual(calls.events, ['push', 'install']);
   assert.equal(result.scheduled, true);
   assert.equal(readJson(paths.vibe).apiKey, values.vibe);
@@ -142,6 +145,7 @@ test('setup 全新配置验证后原子写入、真实 push 并安装任务', as
     deviceId: values.device,
     apiUrl: 'https://dot.mindreset.tech',
     taskKey: 'canvas-target-1001',
+    intervalMinutes: 30,
   });
   assert.equal(aclPaths.length, 2);
   assert.ok(aclPaths.every((path) => path.endsWith('.tmp')));
@@ -159,6 +163,7 @@ test('setup 默认复用两份现有配置且不重复索要凭据', async (t) =
     deviceId: 'existing-device-6006',
     taskKey: 'canvas-target-1001',
     apiUrl: 'https://quote.example',
+    intervalMinutes: 45,
   });
   const io = scriptedIo({ confirms: [true, true, true, false] });
   const { api, calls } = fakeApi();
@@ -170,6 +175,27 @@ test('setup 默认复用两份现有配置且不重复索要凭据', async (t) =
   assert.equal(result.scheduled, false);
   assert.equal(readJson(paths.vibe).apiUrl, 'https://vibe.example');
   assert.equal(readJson(paths.quote).apiUrl, 'https://quote.example');
+  assert.equal(readJson(paths.quote).intervalMinutes, 45);
+});
+
+test('先配置 interval 再首次 setup 时不误判为替换已有凭据', async (t) => {
+  const paths = temporaryPaths(t);
+  writeJson(paths.quote, { intervalMinutes: 60 });
+  const io = scriptedIo({
+    secrets: ['fixture-vibe-interval-first', 'fixture-quote-interval-first', 'fixture-device-interval-first'],
+    confirms: [true, true],
+  });
+  const { api } = fakeApi();
+  let installedInterval;
+
+  const result = await runSetup(setupOptions(paths, io, api, {
+    installScheduledTask(intervalMinutes) { installedInterval = intervalMinutes; },
+  }));
+
+  assert.equal(result.scheduled, true);
+  assert.equal(installedInterval, 60);
+  assert.equal(readJson(paths.quote).intervalMinutes, 60);
+  assert.equal(io.secretCalls, 3);
 });
 
 test('setup 复用省略 API URL 的现有配置时补齐默认值', async (t) => {

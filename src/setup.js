@@ -10,6 +10,7 @@ import { buildCanvasPayload, validateCanvasPayload } from './canvas.js';
 import {
   DEFAULT_QUOTE_URL,
   DEFAULT_VIBE_URL,
+  normalizeIntervalMinutes,
   quoteConfigPath,
   vibeConfigPath,
 } from './config.js';
@@ -150,7 +151,7 @@ function removeIfPresent(fileSystem, path) {
   if (fileSystem.existsSync(path)) fileSystem.unlinkSync(path);
 }
 
-function windowsPowerShellEnvironment(env = process.env) {
+export function windowsPowerShellEnvironment(env = process.env) {
   const childEnv = { ...env };
   for (const name of Object.keys(childEnv)) {
     if (name.toLowerCase() === 'psmodulepath') delete childEnv[name];
@@ -265,6 +266,7 @@ export function writeConfigsAtomically(entries, options = {}) {
 }
 
 export function installWindowsScheduledTask(options = {}) {
+  const intervalMinutes = normalizeIntervalMinutes(options.intervalMinutes);
   const spawn = options.spawnSyncImpl ?? spawnSync;
   const result = spawn('powershell.exe', [
     '-NoLogo',
@@ -274,6 +276,8 @@ export function installWindowsScheduledTask(options = {}) {
     'Bypass',
     '-File',
     options.scriptPath ?? WINDOWS_INSTALL_SCRIPT,
+    '-IntervalMinutes',
+    String(intervalMinutes),
   ], {
     encoding: 'utf8',
     windowsHide: true,
@@ -313,7 +317,8 @@ async function chooseQuoteConfig(existing, io, secrets) {
   if (reusable && await io.confirm('复用现有 Dot/Quote 配置？', true)) {
     return { ...existing, apiUrl: existing.apiUrl || DEFAULT_QUOTE_URL };
   }
-  if (existing && !await io.confirm('确认替换现有 Dot/Quote 凭据与设备？', false)) {
+  const hasCredentialFields = Boolean(existing?.apiKey || existing?.deviceId);
+  if (hasCredentialFields && !await io.confirm('确认替换现有 Dot/Quote 凭据与设备？', false)) {
     throw new SetupCancelledError('已拒绝替换 Dot/Quote 配置；未修改任何配置。');
   }
   const apiKey = await readRequiredSecret(io, 'Dot API Key（输入不回显）：', 'Dot API Key');
@@ -395,6 +400,8 @@ async function runSetupCore(options, secrets) {
 
   const vibe = await chooseVibeConfig(existingVibe, io, secrets);
   const quote = await chooseQuoteConfig(existingQuote, io, secrets);
+  const intervalMinutes = normalizeIntervalMinutes(quote.intervalMinutes);
+  quote.intervalMinutes = intervalMinutes;
   secrets.push(vibe.apiKey, quote.apiKey, quote.deviceId);
 
   const runtime = {
@@ -491,7 +498,7 @@ async function runSetupCore(options, secrets) {
 
   let installConfirmed;
   try {
-    installConfirmed = await io.confirm('安装或更新每 30 分钟的当前用户计划任务？', true);
+    installConfirmed = await io.confirm(`安装或更新每 ${intervalMinutes} 分钟的当前用户计划任务？`, true);
   } catch (error) {
     if (error instanceof SetupCancelledError) {
       throw new SetupCancelledError(
@@ -506,8 +513,8 @@ async function runSetupCore(options, secrets) {
   }
 
   try {
-    const install = options.installScheduledTask ?? (() => installWindowsScheduledTask(options));
-    await install();
+    if (options.installScheduledTask) await options.installScheduledTask(intervalMinutes);
+    else installWindowsScheduledTask({ ...options, intervalMinutes });
   } catch (error) {
     throw new SetupStageError(
       '计划任务安装',
@@ -515,8 +522,8 @@ async function runSetupCore(options, secrets) {
       '修复 Windows 任务计划程序问题后重新运行 vibe-usage-quote0 setup',
     );
   }
-  io.write('配置完成：真实 push 已确认，当前用户 PT30M 计划任务已安装。');
-  return { configured: true, pushed: true, scheduled: true, taskKey };
+  io.write(`配置完成：真实 push 已确认，每 ${intervalMinutes} 分钟的当前用户计划任务已安装。`);
+  return { configured: true, pushed: true, scheduled: true, taskKey, intervalMinutes };
 }
 
 export async function runSetup(options = {}) {
