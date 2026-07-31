@@ -1,6 +1,6 @@
 {
   "name": "vibe-usage-quote0",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "将 Vibe Usage 云端 AI 编码用量推送到 Quote/0 画板。",
   "type": "module",
   "license": "MIT",
