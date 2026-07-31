@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-31
+
 ### Added
 
 - `vibe-usage-quote0 enable` 现已支持 macOS 与 Linux：macOS 自动安装当前用户 launchd 任务，Linux 自动安装无需 root 的 systemd user timer。
@@ -75,7 +77,8 @@
 - 提供 `doctor`、`dry-run`、`push` 命令和 macOS launchd 30 分钟自动刷新模板。
 - 推送前检查设备状态，推送后等待真实渲染变化，并对凭据和日志执行防泄漏检查。
 
-[Unreleased]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/zzzhizhia/vibe-usage-quote0/releases/tag/v0.1.1
