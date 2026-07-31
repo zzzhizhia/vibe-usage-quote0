@@ -15,6 +15,7 @@ import {
   installLinuxSystemdTimer,
   updateInstalledSchedule,
 } from '../src/scheduler.js';
+import { createChmodTracker, hasPrivateChmod } from './helpers/file-mode.js';
 
 function temporaryRoot(t, label) {
   const root = mkdtempSync(join(tmpdir(), `vibe-quote0-${label}-`));
@@ -26,6 +27,7 @@ test('macOS enable 生成无秘密 launchd 任务并加载当前用户服务', (
   const root = temporaryRoot(t, 'launchd-install');
   const plistPath = join(root, 'Library', 'LaunchAgents', 'agent.plist');
   const calls = [];
+  const tracker = createChmodTracker();
   const result = installScheduledTask({
     platform: 'darwin',
     intervalMinutes: 45,
@@ -39,6 +41,7 @@ test('macOS enable 生成无秘密 launchd 任务并加载当前用户服务', (
       XDG_DATA_HOME: join(root, 'data'),
       VIBE_USAGE_API_KEY: 'must-not-enter-launchd',
     },
+    fileSystem: tracker.fileSystem,
     spawnSyncImpl(command, args) {
       calls.push([command, args]);
       if (command === 'launchctl' && args[0] === 'print') {
@@ -50,7 +53,8 @@ test('macOS enable 生成无秘密 launchd 任务并加载当前用户服务', (
 
   const plist = readFileSync(plistPath, 'utf8');
   assert.equal(result.installed, true);
-  assert.equal(statSync(plistPath).mode & 0o777, 0o600);
+  assert.equal(hasPrivateChmod(tracker.calls, plistPath), true);
+  if (process.platform !== 'win32') assert.equal(statSync(plistPath).mode & 0o777, 0o600);
   assert.match(plist, /<integer>2700<\/integer>/);
   assert.match(plist, /\/opt\/node &amp; tools\/bin\/node/);
   assert.match(plist, /XDG_CONFIG_HOME/);
@@ -64,6 +68,7 @@ test('Linux enable 安装无秘密 systemd 用户 timer，interval 与 disable �
   const root = temporaryRoot(t, 'systemd-install');
   const systemdDirectory = join(root, 'config', 'systemd', 'user');
   const calls = [];
+  const tracker = createChmodTracker();
   const options = {
     platform: 'linux',
     intervalMinutes: 30,
@@ -76,6 +81,7 @@ test('Linux enable 安装无秘密 systemd 用户 timer，interval 与 disable �
       XDG_DATA_HOME: join(root, 'data'),
       QUOTE0_API_KEY: 'must-not-enter-systemd',
     },
+    fileSystem: tracker.fileSystem,
     spawnSyncImpl(command, args) {
       calls.push([command, args]);
       return { status: 0, stdout: '', stderr: '' };
@@ -85,7 +91,12 @@ test('Linux enable 安装无秘密 systemd 用户 timer，interval 与 disable �
   const installed = installScheduledTask(options);
   const service = readFileSync(installed.servicePath, 'utf8');
   const firstTimer = readFileSync(installed.timerPath, 'utf8');
-  assert.equal(statSync(installed.servicePath).mode & 0o777, 0o600);
+  assert.equal(hasPrivateChmod(tracker.calls, installed.servicePath), true);
+  assert.equal(hasPrivateChmod(tracker.calls, installed.timerPath), true);
+  if (process.platform !== 'win32') {
+    assert.equal(statSync(installed.servicePath).mode & 0o777, 0o600);
+    assert.equal(statSync(installed.timerPath).mode & 0o777, 0o600);
+  }
   assert.match(service, /ExecStart="\/opt\/node%%20\/bin\/node" "\/opt\/vibe usage\/src\/index\.js" push/);
   assert.match(service, /XDG_CONFIG_HOME=/);
   assert.doesNotMatch(service, /must-not-enter-systemd|apiKey|deviceId/i);

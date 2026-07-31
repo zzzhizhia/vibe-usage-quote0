@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { runCli } from '../src/index.js';
+import { createChmodTracker, hasPrivateChmod } from './helpers/file-mode.js';
 
 const projectRoot = resolve(import.meta.dirname, '..');
 
@@ -47,16 +48,19 @@ test('CLI interval 无需凭据即可安全保存并等待 Linux enable 安装�
   const root = mkdtempSync(join(tmpdir(), 'vibe-usage-quote0-interval-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const output = [];
+  const tracker = createChmodTracker();
   const result = await runCli(['interval', '45'], {
     env: { XDG_CONFIG_HOME: root },
     platform: 'linux',
+    fileSystem: tracker.fileSystem,
     stdout: (line) => output.push(line),
   });
   const path = join(root, 'vibe-usage-quote0', 'config.json');
 
   assert.equal(result.intervalMinutes, 45);
   assert.deepEqual(JSON.parse(readFileSync(path, 'utf8')), { intervalMinutes: 45 });
-  assert.equal(statSync(path).mode & 0o777, 0o600);
+  assert.equal(hasPrivateChmod(tracker.calls, path), true);
+  if (process.platform !== 'win32') assert.equal(statSync(path).mode & 0o777, 0o600);
   assert.match(output.join('\n'), /45 分钟/);
   assert.match(output.join('\n'), /未检测到已安装调度任务/);
 });

@@ -14,6 +14,7 @@ import {
   normalizeIntervalMinutes,
   quoteConfigPath,
 } from '../src/config.js';
+import { createChmodTracker, hasPrivateChmod } from './helpers/file-mode.js';
 
 test('刷新间隔默认 30 分钟且只接受受支持的整数分钟', () => {
   assert.equal(normalizeIntervalMinutes(), DEFAULT_INTERVAL_MINUTES);
@@ -130,12 +131,19 @@ test('macOS/Linux 加载现有 Vibe 配置时静默收紧到 0600', (t) => {
   const path = join(home, '.vibe-usage', 'config.json');
   mkdirSync(join(path, '..'), { recursive: true });
   writeFileSync(path, '{"apiKey":"fixture-vibe-mode-key"}\n', { mode: 0o644 });
+  const tracker = createChmodTracker();
 
-  const config = loadVibeConfig({}, { platform: 'darwin', home });
+  const config = loadVibeConfig({}, {
+    platform: 'darwin',
+    home,
+    chmodSyncImpl: tracker.chmodSyncImpl,
+    fileModeImpl: process.platform === 'win32' ? () => 0o600 : undefined,
+  });
 
   assert.equal(config.permissionHardened, true);
   assert.equal(config.insecureMode, false);
-  assert.equal(statSync(path).mode & 0o777, 0o600);
+  assert.equal(hasPrivateChmod(tracker.calls, path), true);
+  if (process.platform !== 'win32') assert.equal(statSync(path).mode & 0o777, 0o600);
   assert.match(readFileSync(path, 'utf8'), /fixture-vibe-mode-key/);
 });
 

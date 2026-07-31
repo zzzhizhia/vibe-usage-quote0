@@ -15,6 +15,7 @@ import {
   writeConfigsAtomically,
 } from '../src/setup.js';
 import { todayUsage, weekUsage } from './fixtures/usage.js';
+import { createChmodTracker, hasPrivateChmod } from './helpers/file-mode.js';
 
 function temporaryPaths(t) {
   const root = mkdtempSync(join(tmpdir(), 'vibe-quote0-setup-'));
@@ -167,10 +168,12 @@ for (const platform of ['darwin', 'linux']) {
       confirms: [true, true],
     });
     const { api } = fakeApi();
+    const tracker = createChmodTracker();
     let installedInterval;
 
     const result = await runSetup(setupOptions(paths, io, api, {
       platform,
+      fileSystem: tracker.fileSystem,
       installScheduledTask(intervalMinutes) { installedInterval = intervalMinutes; },
     }));
 
@@ -178,8 +181,12 @@ for (const platform of ['darwin', 'linux']) {
     assert.equal(result.pushed, true);
     assert.equal(result.scheduled, true);
     assert.equal(installedInterval, 30);
-    assert.equal(nodeFs.statSync(paths.vibe).mode & 0o777, 0o600);
-    assert.equal(nodeFs.statSync(paths.quote).mode & 0o777, 0o600);
+    assert.equal(hasPrivateChmod(tracker.calls, paths.vibe), true);
+    assert.equal(hasPrivateChmod(tracker.calls, paths.quote), true);
+    if (process.platform !== 'win32') {
+      assert.equal(nodeFs.statSync(paths.vibe).mode & 0o777, 0o600);
+      assert.equal(nodeFs.statSync(paths.quote).mode & 0o777, 0o600);
+    }
     assert.match(io.output.join('\n'), /配置完成/);
   });
 }

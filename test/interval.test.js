@@ -5,6 +5,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { configureInterval, disableSchedule, updateInstalledSchedule } from '../src/interval.js';
 
+const CONFIG_TEST_PLATFORM = process.platform === 'win32' ? 'win32' : 'darwin';
+
 function temporaryConfig(t, value = {}) {
   const root = mkdtempSync(join(tmpdir(), 'vibe-usage-quote0-interval-test-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -24,7 +26,8 @@ test('interval 保留现有凭据和未知配置字段', async (t) => {
 
   const result = await configureInterval('90', {
     env: { XDG_CONFIG_HOME: root },
-    platform: 'darwin',
+    platform: CONFIG_TEST_PLATFORM,
+    protectFile() {},
     scheduleUpdater(minutes) {
       scheduledMinutes = minutes;
       return { platform: 'darwin', installed: false, updated: false };
@@ -46,7 +49,8 @@ test('调度器更新失败时明确说明配置已经保存', async (t) => {
 
   await assert.rejects(configureInterval('60', {
     env: { XDG_CONFIG_HOME: root },
-    platform: 'darwin',
+    platform: CONFIG_TEST_PLATFORM,
+    protectFile() {},
     scheduleUpdater() { throw new Error('simulated reload failure'); },
   }), /已保存为 60 分钟.*调度任务更新失败/);
   assert.equal(JSON.parse(readFileSync(path, 'utf8')).intervalMinutes, 60);
