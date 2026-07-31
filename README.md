@@ -42,7 +42,7 @@ vibe-usage-quote0 enable
 vibe-usage-quote0 doctor
 vibe-usage-quote0 dry-run
 vibe-usage-quote0 push
-vibe-usage-quote0 interval 60
+vibe-usage-quote0 interval
 vibe-usage-quote0 disable
 vibe-usage-quote0 update
 ```
