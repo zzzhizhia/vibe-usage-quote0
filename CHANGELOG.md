@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-07-31
+
+### Fixed
+
+- 修复 Windows 上 `vibe-usage-quote0 update` 直接启动 `npm.cmd` 时出现 `spawnSync npm.cmd EINVAL` 的问题；现在通过系统命令解释器执行 npm 更新。
+
 ## [0.3.1] - 2026-07-31
 
 ### Fixed
@@ -84,7 +90,8 @@
 - 提供 `doctor`、`dry-run`、`push` 命令和 macOS launchd 30 分钟自动刷新模板。
 - 推送前检查设备状态，推送后等待真实渲染变化，并对凭据和日志执行防泄漏检查。
 
-[Unreleased]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/zzzhizhia/vibe-usage-quote0/compare/v0.1.2...v0.2.0

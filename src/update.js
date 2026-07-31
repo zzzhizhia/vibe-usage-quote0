@@ -10,15 +10,21 @@ function commandFailureDetail(result) {
 
 export function updateSelf(options = {}) {
   const platform = options.platform ?? process.platform;
-  const command = options.npmCommand ?? (platform === 'win32' ? 'npm.cmd' : 'npm');
+  const npmCommand = options.npmCommand ?? (platform === 'win32' ? 'npm.cmd' : 'npm');
   const spawn = options.spawnSyncImpl ?? spawnSync;
-  const args = [
+  const npmArgs = [
     'install',
     '--global',
     '--no-audit',
     '--no-fund',
     `${PACKAGE_NAME}@latest`,
   ];
+  const command = platform === 'win32'
+    ? (options.env?.ComSpec ?? process.env.ComSpec ?? 'cmd.exe')
+    : npmCommand;
+  const args = platform === 'win32'
+    ? ['/d', '/s', '/c', npmCommand, ...npmArgs]
+    : npmArgs;
   const result = spawn(command, args, {
     encoding: 'utf8',
     windowsHide: true,
@@ -29,5 +35,5 @@ export function updateSelf(options = {}) {
     const detail = commandFailureDetail(result);
     throw new Error(`npm 全局更新失败${detail ? `：${detail}` : ''}`);
   }
-  return { packageName: PACKAGE_NAME, packageSpec: `${PACKAGE_NAME}@latest`, command };
+  return { packageName: PACKAGE_NAME, packageSpec: `${PACKAGE_NAME}@latest`, command: npmCommand };
 }
