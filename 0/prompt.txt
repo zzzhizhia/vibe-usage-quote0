@@ -1,0 +1,8 @@
+在我朋友电脑上报错：
+
+失败：enable 阶段 配置写入 失败：配置原子写入失败：无法设置 Windows 配置 ACL：C:\Users\Lan\AppData\Roaming\npm\node_modules\vibe-usage-quote0\windows\setup.ps1 : �ý��̲�����ִ�д˲�������ġ�SeSecu rityPrivilege����Ȩ�� ����λ�� C:\Users\Lan\AppData\Roaming\npm\node_modules\vibe-usage-quote0\windows\setup.ps1:12 �ַ�: 3 + Write-Error $_.Exception.Message + ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ + CategoryInfo : NotSpecified: (:) [Write-Error], WriteErrorException + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,setup.ps1；配置未替换；原配置已保留
+下一步：检查配置目录权限后重新运行 vibe-usage-quote0 enable
+
+PS C:\Users\Lan> vibe-usage-quote0 update
+正在通过 npm 更新 vibe-usage-quote0...
+失败：无法启动 npm：spawnSync npm.cmd EINVAL
