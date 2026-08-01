@@ -1,0 +1,86 @@
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+PS C:\Users\Lan> npm ls -g
+C:\Users\Lan\AppData\Roaming\npm
++-- @anthropic-ai/claude-code@2.1.210
++-- pnpm@
+`-- vibe-usage-quote0@0.1.2
+
+PS C:\Users\Lan> npm
+npm <command>
+
+Usage:
+
+npm install        install all the dependencies in your project
+npm install <foo>  add the <foo> dependency to your project
+npm test           run this project's tests
+npm run <foo>      run the script named <foo>
+npm <command> -h   quick help on <command>
+npm -l             display usage info for all commands
+npm help <term>    search for help on <term> (in a browser)
+npm help npm       more involved overview (in a browser)
+
+All commands:
+
+    access, adduser, audit, bugs, cache, ci, completion,
+    config, dedupe, deprecate, diff, dist-tag, docs, doctor,
+    edit, exec, explain, explore, find-dupes, fund, get, help,
+    help-search, hook, init, install, install-ci-test,
+    install-test, link, ll, login, logout, ls, org, outdated,
+    owner, pack, ping, pkg, prefix, profile, prune, publish,
+    query, rebuild, repo, restart, root, run-script, sbom,
+    search, set, shrinkwrap, star, stars, start, stop, team,
+    test, token, uninstall, unpublish, unstar, update, version,
+    view, whoami
+
+Specify configs in the ini-formatted file:
+    C:\Users\Lan\.npmrc
+or on the command line via: npm <command> --key=value
+
+More configuration info: npm help config
+Configuration fields: npm help 7 config
+
+npm@10.9.2 C:\Program Files\nodejs\node_modules\npm
+PS C:\Users\Lan> npm update -g vibe-usage-quote0
+
+changed 1 package in 1s
+PS C:\Users\Lan> npm ls -g
+C:\Users\Lan\AppData\Roaming\npm
++-- @anthropic-ai/claude-code@2.1.210
++-- pnpm@
+`-- vibe-usage-quote0@0.3.0
+
+PS C:\Users\Lan> vibe-usage-quote0
+vibe-usage-quote0
+
+用法：
+  vibe-usage-quote0 enable   交互式安全配置、真实推送并安装当前平台定时刷新
+  vibe-usage-quote0 disable  解除本工具的定时刷新任务（保留配置与数据）
+  vibe-usage-quote0 update   通过 npm 更新至最新版
+  vibe-usage-quote0 doctor   检查 Vibe 与 Quote/0 前提
+  vibe-usage-quote0 dry-run  获取 Vibe 用量并输出脱敏摘要
+  vibe-usage-quote0 push     推送画板并等待渲染状态变化
+  vibe-usage-quote0 interval <minutes>  配置推送刷新间隔（默认 30 分钟）
+PS C:\Users\Lan> vibe-usage-quote0 interval 5
+失败：enable 阶段 配置写入 失败：配置原子写入失败：无法设置 Windows 配置 ACL：C:\Users\Lan\AppData\Roaming\npm\node_modules\vibe-usage-quote0\windows\setup.ps1 : �ý��̲�����ִ�д˲�������ġ�SeSecu rityPrivilege����Ȩ�� ����λ�� C:\Users\Lan\AppData\Roaming\npm\node_modules\vibe-usage-quote0\windows\setup.ps1:12 �ַ�: 3 + Write-Error $_.Exception.Message + ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ + CategoryInfo : NotSpecified: (:) [Write-Error], WriteErrorException + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,setup.ps1；配置未替换；原配置已保留
+下一步：检查配置目录权限后重新运行 vibe-usage-quote0 enable
+PS C:\Users\Lan> vibe-usage-quote0 enable
+Vibe 配置：C:\Users\Lan\.vibe-usage\config.json；apiKey=***c1e9
+Dot/Quote 配置：C:\Users\Lan\AppData\Roaming\vibe-usage-quote0\config.json；apiKey=***HObJ，deviceId=***CBC4，taskKey=***6DI_
+复用现有 Vibe 配置？ [Y/n]
+复用现有 Dot/Quote 配置？ [Y/n]
+[请求] Vibe 1日用量 尝试=1 标识=***ys-1
+[请求] Vibe 7日用量 尝试=1 标识=***ys-7
+[状态] Vibe 1日用量 HTTP=200 标识=***ys-1
+[状态] Vibe 7日用量 HTTP=200 标识=***ys-7
+[请求] Quote 任务列表 尝试=1 标识=***CBC4
+[状态] Quote 任务列表 HTTP=200 标识=***CBC4
+自动选择唯一 CANVAS_API：***6DI_
+[请求] Quote 设备状态 尝试=1 标识=***CBC4
+[状态] Quote 设备状态 HTTP=200 标识=***CBC4
+目标设备：***CBC4；CANVAS\_API：***6DI_
+确认目标并立即执行真实 push？ [Y/n]
+失败：enable 阶段 配置写入 失败：配置原子写入失败：无法设置 Windows 配置 ACL：C:\Users\Lan\AppData\Roaming\npm\node_modules\vibe-usage-quote0\windows\setup.ps1 : �ý��̲�����ִ�д˲�������ġ�SeSecu rityPrivilege����Ȩ�� ����λ�� C:\Users\Lan\AppData\Roaming\npm\node_modules\vibe-usage-quote0\windows\setup.ps1:12 �ַ�: 3 + Write-Error $_.Exception.Message + ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ + CategoryInfo : NotSpecified: (:) [Write-Error], WriteErrorException + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,setup.ps1；配置未替换；原配置已保留
+下一步：检查配置目录权限后重新运行 vibe-usage-quote0 enable
+PS C:\Users\Lan>
