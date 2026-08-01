@@ -1,0 +1,15 @@
+# Files mentioned by the user:
+
+## codex-clipboard-33a3faa6-49a8-4f2c-9bd9-34c76475e4e0.png: /var/folders/5q/3m7lyg4n6pv9m25q4ck2yqrr0000gn/T/codex-clipboard-33a3faa6-49a8-4f2c-9bd9-34c76475e4e0.png
+
+## My request for Codex:
+token 用量显示档位新增「今天/24H/7D/30D/90D/自定义」。
+如图，红色框内的部分是主要数据（main）；绿色框内的部分是次要数据（secondary）。
+配置命令：
+```
+vibe-usage-quote0 display <main/secondary> <today/24h/7d/30d/90d/xd/yyyyMMdd-yyyyMMdd>
+```
+
+<image name=[Image #1] path="/var/folders/5q/3m7lyg4n6pv9m25q4ck2yqrr0000gn/T/codex-clipboard-33a3faa6-49a8-4f2c-9bd9-34c76475e4e0.png">
+
+</image>
