@@ -1,0 +1,2 @@
+更新一下 [README.md](README.md) ，现在已经有一键命令来配置了，把繁杂的手工配置流程全部换掉。
+把 macOS/Linux 置于 Windows 之上。
