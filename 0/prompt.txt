@@ -1,0 +1,13 @@
+# AGENTS.md instructions
+
+<INSTRUCTIONS>
+Respond in Chinese.
+</INSTRUCTIONS>
+
+<environment_context>
+  <cwd>/Users/zzzhizhi/Developer/zzzhizhia/vibe-usage-quote0</cwd>
+  <shell>zsh</shell>
+  <current_date>2026-07-31</current_date>
+  <timezone>Asia/Shanghai</timezone>
+  <filesystem><workspace_roots><root>/Users/zzzhizhi/Developer/zzzhizhia/vibe-usage-quote0</root><root>/Users/zzzhizhi/.codex/visualizations/2026/07/31/019fb845-5769-7911-a0a2-43d20c787fbf</root></workspace_roots><permission_profile type="disabled"><file_system type="unrestricted" /></permission_profile></filesystem>
+</environment_context>
