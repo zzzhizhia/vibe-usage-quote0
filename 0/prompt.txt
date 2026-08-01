@@ -1,0 +1,30 @@
+<recommended_plugins>
+Here is a list of plugins that are available but not installed.
+
+- Atlassian Rovo (atlassian-rovo@openai-curated-remote)
+- Box (box@openai-curated-remote)
+- Figma (figma@openai-curated-remote)
+- Gmail (gmail@openai-curated-remote)
+- Google Calendar (google-calendar@openai-curated-remote)
+- Google Drive (google-drive@openai-curated-remote)
+- Notion (notion@openai-curated-remote)
+- Outlook Calendar (outlook-calendar@openai-curated-remote)
+- Outlook Email (outlook-email@openai-curated-remote)
+- SharePoint (sharepoint@openai-curated-remote)
+- Slack (slack@openai-curated-remote)
+- Teams (teams@openai-curated-remote)
+</recommended_plugins>
+
+# AGENTS.md instructions
+
+<INSTRUCTIONS>
+Respond in Chinese.
+</INSTRUCTIONS>
+
+<environment_context>
+  <cwd>/Users/zzzhizhi/Developer/zzzhizhia/vibe-usage-quote0</cwd>
+  <shell>zsh</shell>
+  <current_date>2026-08-01</current_date>
+  <timezone>Asia/Shanghai</timezone>
+  <filesystem><workspace_roots><root>/Users/zzzhizhi/Developer/zzzhizhia/vibe-usage-quote0</root><root>/Users/zzzhizhi/.codex/visualizations/2026/08/01/019fbd1b-560a-77d1-967f-f9a5df8b073f</root></workspace_roots><permission_profile type="disabled"><file_system type="unrestricted" /></permission_profile></filesystem>
+</environment_context>
