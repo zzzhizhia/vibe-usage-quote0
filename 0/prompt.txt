@@ -1,0 +1,1 @@
+interval 和 disable 支持 macOS 了吗
