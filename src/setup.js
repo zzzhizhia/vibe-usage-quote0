@@ -5,7 +5,6 @@ import { dirname } from 'node:path';
 import { createInterface } from 'node:readline';
 import { Writable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
-import { aggregateUsage } from './aggregate.js';
 import { buildCanvasPayload, validateCanvasPayload } from './canvas.js';
 import {
   DEFAULT_QUOTE_URL,
@@ -14,6 +13,7 @@ import {
   quoteConfigPath,
   vibeConfigPath,
 } from './config.js';
+import { normalizeDisplaySettings } from './display.js';
 import { maskIdentifier } from './http.js';
 import {
   DeviceUnavailableError,
@@ -28,6 +28,7 @@ import {
   windowsPowerShellEnvironment,
 } from './scheduler.js';
 import { fetchUsage } from './vibe.js';
+import { collectDisplayUsage } from './usage.js';
 
 const WINDOWS_ACL_SCRIPT = fileURLToPath(new URL('../windows/setup.ps1', import.meta.url));
 
@@ -318,10 +319,11 @@ async function chooseQuoteConfig(existing, io, secrets) {
 
 function defaultApiClient(runtime) {
   return {
-    fetchUsage(config, days) {
+    fetchUsage(config, request) {
       return fetchUsage({
         ...config,
-        days,
+        query: request.query,
+        timeZone: request.timeZone,
         fetchImpl: runtime.fetchImpl,
         logger: runtime.logger,
         retryOptions: runtime.retryOptions,
@@ -386,6 +388,7 @@ async function runSetupCore(options, secrets) {
   const quote = await chooseQuoteConfig(existingQuote, io, secrets);
   const intervalMinutes = normalizeIntervalMinutes(quote.intervalMinutes);
   quote.intervalMinutes = intervalMinutes;
+  quote.display = normalizeDisplaySettings(quote.display);
   secrets.push(vibe.apiKey, quote.apiKey, quote.deviceId);
 
   const runtime = {
@@ -397,15 +400,18 @@ async function runSetupCore(options, secrets) {
     delay: options.delay,
   };
   const api = options.apiClient ?? defaultApiClient(runtime);
-  let today;
-  let week;
+  let summary;
   let tasks;
   try {
-    [today, week] = await Promise.all([
-      api.fetchUsage(vibe, 1),
-      api.fetchUsage(vibe, 7),
+    [summary, tasks] = await Promise.all([
+      collectDisplayUsage(vibe, quote.display, {
+        ...runtime,
+        now: options.now ?? new Date(),
+        timeZone: options.timeZone,
+        fetchUsageImpl: (config, request) => api.fetchUsage(config, request),
+      }),
+      api.listDeviceTasks(quote),
     ]);
-    tasks = await api.listDeviceTasks(quote);
   } catch (error) {
     throw new SetupStageError('凭据验证', redactText(error?.message, secrets));
   }
@@ -458,7 +464,6 @@ async function runSetupCore(options, secrets) {
     );
   }
 
-  const summary = aggregateUsage(today, week);
   const payload = buildCanvasPayload(summary, options.now ?? new Date());
   validateCanvasPayload(payload, [vibe.apiKey, quote.apiKey, quote.deviceId]);
   let pushResult;

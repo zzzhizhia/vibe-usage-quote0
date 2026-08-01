@@ -6,6 +6,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- 新增 `vibe-usage-quote0 display <main|secondary> <range>`，主要与次要数据可独立配置 `today`、`24h`、`7d`、`30d`、`90d`、任意 `Nd`（1-3650）或 `yyyyMMdd-yyyyMMdd` 自定义日期。
+
+### Changed
+
+- 主要区域的 Token、费用、会话、活跃时长与主力工具/模型现在统一跟随 `main` 档位，次要区域的 Token/费用跟随 `secondary` 档位；旧配置默认保持“今天 + 近 7 日”。
+- “今天”改为当前系统时区的本地零点至现在，并与滚动 24 小时严格区分；所有 Vibe 时间查询都会携带本地时区，自定义范围包含首尾日期。
+
 ## [0.3.2] - 2026-07-31
 
 ### Fixed

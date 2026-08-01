@@ -67,12 +67,12 @@ function scriptedIo(options = {}) {
 }
 
 function fakeApi(options = {}) {
-  const calls = { days: [], pushes: 0, events: [] };
+  const calls = { ranges: [], pushes: 0, events: [] };
   const api = {
-    async fetchUsage(config, days) {
-      calls.days.push(days);
+    async fetchUsage(config, request) {
+      calls.ranges.push(request.range.value);
       if (options.usageError) throw options.usageError;
-      return days === 1 ? todayUsage : weekUsage;
+      return ['today', '24h'].includes(request.range.value) ? todayUsage : weekUsage;
     },
     async listDeviceTasks() {
       if (options.taskError) throw options.taskError;
@@ -134,7 +134,7 @@ test('setup 全新配置验证后原子写入、真实 push 并安装任务', as
     },
   }));
 
-  assert.deepEqual(calls.days.sort(), [1, 7]);
+  assert.deepEqual(calls.ranges.sort(), ['7d', 'today']);
   assert.equal(calls.pushes, 1);
   assert.equal(installs, 1);
   assert.equal(installedInterval, 30);
@@ -147,6 +147,7 @@ test('setup 全新配置验证后原子写入、真实 push 并安装任务', as
     apiUrl: 'https://dot.mindreset.tech',
     taskKey: 'canvas-target-1001',
     intervalMinutes: 30,
+    display: { main: 'today', secondary: '7d' },
   });
   assert.equal(aclPaths.length, 2);
   assert.ok(aclPaths.every((path) => path.endsWith('.tmp')));

@@ -89,10 +89,16 @@ export function aggregateWindow(response) {
   };
 }
 
-export function aggregateUsage(todayResponse, weekResponse) {
+const DEFAULT_RANGES = {
+  main: { value: 'today', label: '今天', description: '今天（本地零点至现在）' },
+  secondary: { value: '7d', label: '近 7 日', description: '近 7 日' },
+};
+
+export function aggregateUsage(mainResponse, secondaryResponse, ranges = DEFAULT_RANGES) {
   return {
-    today: aggregateWindow(todayResponse),
-    week: aggregateWindow(weekResponse),
+    main: aggregateWindow(mainResponse),
+    secondary: aggregateWindow(secondaryResponse),
+    ranges,
   };
 }
 

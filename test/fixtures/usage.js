@@ -2,6 +2,7 @@ export const todayUsage = {
   hasAnyData: true,
   buckets: [
     {
+      bucketStart: '2026-07-30T00:00:00.000Z',
       source: 'Claude Code',
       model: 'opus',
       project: 'private-alpha',
@@ -10,6 +11,7 @@ export const todayUsage = {
       estimatedCost: 0.1,
     },
     {
+      bucketStart: '2026-07-30T01:00:00.000Z',
       source: 'Cursor',
       model: 'sonnet',
       project: 'private-beta',
@@ -18,6 +20,7 @@ export const todayUsage = {
       estimatedCost: 0.2,
     },
     {
+      bucketStart: '2026-07-30T02:00:00.000Z',
       source: 'Claude Code',
       model: 'haiku',
       project: 'private-alpha',
@@ -27,8 +30,8 @@ export const todayUsage = {
     },
   ],
   sessions: [
-    { activeSeconds: 1_800, project: 'private-alpha' },
-    { activeSeconds: 900, project: 'private-beta' },
+    { firstMessageAt: '2026-07-30T00:15:00.000Z', activeSeconds: 1_800, project: 'private-alpha' },
+    { firstMessageAt: '2026-07-30T01:15:00.000Z', activeSeconds: 900, project: 'private-beta' },
   ],
 };
 
@@ -36,6 +39,7 @@ export const weekUsage = {
   hasAnyData: true,
   buckets: [
     {
+      bucketStart: '2026-07-24T00:00:00.000Z',
       source: 'Claude Code',
       model: 'opus',
       project: 'private-alpha',
@@ -44,6 +48,7 @@ export const weekUsage = {
       estimatedCost: 1.2,
     },
     {
+      bucketStart: '2026-07-25T00:00:00.000Z',
       source: 'Cursor',
       model: 'sonnet',
       project: 'private-beta',
@@ -52,6 +57,7 @@ export const weekUsage = {
       estimatedCost: 0.8,
     },
     {
+      bucketStart: '2026-07-26T00:00:00.000Z',
       source: 'Copilot',
       model: 'gpt',
       project: 'private-gamma',
@@ -60,6 +66,7 @@ export const weekUsage = {
       estimatedCost: 0.3,
     },
     {
+      bucketStart: '2026-07-27T00:00:00.000Z',
       source: 'Claude Code',
       model: 'sonnet',
       project: 'private-alpha',
@@ -68,6 +75,7 @@ export const weekUsage = {
       estimatedCost: 0.5,
     },
     {
+      bucketStart: '2026-07-28T00:00:00.000Z',
       source: 'Aider',
       model: 'deepseek',
       project: 'private-delta',
@@ -76,6 +84,7 @@ export const weekUsage = {
       estimatedCost: 0.2,
     },
     {
+      bucketStart: '2026-07-29T00:00:00.000Z',
       source: 'Continue',
       model: 'llama',
       project: 'private-epsilon',
@@ -85,10 +94,10 @@ export const weekUsage = {
     },
   ],
   sessions: [
-    { activeSeconds: 3_600, project: 'private-alpha' },
-    { activeSeconds: 1_800, project: 'private-beta' },
-    { activeSeconds: 600, project: 'private-gamma' },
-    { activeSeconds: 0, project: 'private-delta' },
+    { firstMessageAt: '2026-07-24T00:15:00.000Z', activeSeconds: 3_600, project: 'private-alpha' },
+    { firstMessageAt: '2026-07-25T00:15:00.000Z', activeSeconds: 1_800, project: 'private-beta' },
+    { firstMessageAt: '2026-07-26T00:15:00.000Z', activeSeconds: 600, project: 'private-gamma' },
+    { firstMessageAt: '2026-07-27T00:15:00.000Z', activeSeconds: 0, project: 'private-delta' },
   ],
 };
 

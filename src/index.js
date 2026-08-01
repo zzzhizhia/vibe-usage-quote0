@@ -2,16 +2,21 @@
 import { mkdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { aggregateUsage } from './aggregate.js';
 import { buildCanvasPayload, validateCanvasPayload } from './canvas.js';
-import { dataDirectory, loadQuoteConfig, loadVibeConfig } from './config.js';
+import {
+  dataDirectory,
+  loadDisplaySettings,
+  loadQuoteConfig,
+  loadVibeConfig,
+} from './config.js';
+import { configureDisplay } from './display-config.js';
 import { formatRequestLog, maskIdentifier } from './http.js';
 import { configureInterval, disableSchedule } from './interval.js';
 import { inspectPng } from './png.js';
 import { getCanvasStatus, listDeviceTasks, pushCanvasAndWait, selectCanvasTask } from './quote.js';
 import { runSetup } from './setup.js';
 import { updateSelf } from './update.js';
-import { fetchUsage } from './vibe.js';
+import { collectDisplayUsage } from './usage.js';
 
 const HELP = `vibe-usage-quote0
 
@@ -23,34 +28,32 @@ const HELP = `vibe-usage-quote0
   vibe-usage-quote0 dry-run  获取 Vibe 用量并输出脱敏摘要
   vibe-usage-quote0 push     推送画板并等待渲染状态变化
   vibe-usage-quote0 interval <minutes>  配置推送刷新间隔（默认 30 分钟）
+  vibe-usage-quote0 display <main|secondary> <today|24h|Nd|yyyyMMdd-yyyyMMdd>
+                             配置主要或次要数据的显示档位
 `;
 
 function defaultLogger(event) {
   process.stderr.write(`${formatRequestLog(event)}\n`);
 }
 
-async function collectUsage(vibe, options) {
-  const [todayResponse, weekResponse] = await Promise.all([
-    fetchUsage({ ...vibe, days: 1, fetchImpl: options.fetchImpl, logger: options.logger, retryOptions: options.retryOptions }),
-    fetchUsage({ ...vibe, days: 7, fetchImpl: options.fetchImpl, logger: options.logger, retryOptions: options.retryOptions }),
-  ]);
-  return aggregateUsage(todayResponse, weekResponse);
-}
-
 function dryRunSummary(summary, payload, payloadInfo) {
   return {
-    today: {
-      tokens: summary.today.totalTokens,
-      cost: Number(summary.today.estimatedCost.toFixed(6)),
-      sessions: summary.today.sessionCount,
-      activeSeconds: summary.today.activeSeconds,
+    main: {
+      range: summary.ranges.main.value,
+      description: summary.ranges.main.description,
+      tokens: summary.main.totalTokens,
+      cost: Number(summary.main.estimatedCost.toFixed(6)),
+      sessions: summary.main.sessionCount,
+      activeSeconds: summary.main.activeSeconds,
+      topTools: summary.main.topTools,
+      topModels: summary.main.topModels,
     },
-    last7Days: {
-      tokens: summary.week.totalTokens,
-      cost: Number(summary.week.estimatedCost.toFixed(6)),
+    secondary: {
+      range: summary.ranges.secondary.value,
+      description: summary.ranges.secondary.description,
+      tokens: summary.secondary.totalTokens,
+      cost: Number(summary.secondary.estimatedCost.toFixed(6)),
     },
-    topTools: summary.week.topTools,
-    topModels: summary.week.topModels,
     payload: {
       taskAlias: payload.taskAlias,
       refreshNow: payload.refreshNow,
@@ -164,6 +167,25 @@ export async function runCli(argv = process.argv.slice(2), options = {}) {
     }
     return { command, ...result };
   }
+  if (command === 'display') {
+    if (argv.length !== 3) {
+      throw new Error('用法：vibe-usage-quote0 display <main|secondary> <today|24h|Nd|yyyyMMdd-yyyyMMdd>');
+    }
+    const configure = options.displayRunner ?? configureDisplay;
+    const result = await configure(argv[1], argv[2], {
+      env,
+      platform: options.platform,
+      home: options.home,
+      fileSystem: options.fileSystem,
+      protectFile: options.protectFile,
+      spawnSyncImpl: options.spawnSyncImpl,
+      aclScriptPath: options.aclScriptPath,
+    });
+    const targetLabel = result.target === 'main' ? '主要数据' : '次要数据';
+    stdout(`${targetLabel}显示档位已设置为：${result.range.description}。`);
+    stdout('将在下次 push 或定时刷新时生效。');
+    return { command, ...result };
+  }
   if (!['doctor', 'dry-run', 'push'].includes(command)) {
     throw new Error(`未知命令：${command}`);
   }
@@ -178,28 +200,41 @@ export async function runCli(argv = process.argv.slice(2), options = {}) {
     dataDirectory: options.dataDirectory ?? dataDirectory(env),
   };
 
-  const vibe = loadVibeConfig(env);
-  const summary = await collectUsage(vibe, runtime);
+  const now = options.now ?? new Date();
+  const vibe = loadVibeConfig(env, { platform: options.platform, home: options.home });
+  let quote = null;
+  let display;
+  if (command === 'dry-run') {
+    display = loadDisplaySettings(env, { platform: options.platform, home: options.home }).display;
+  } else {
+    quote = loadQuoteConfig(env, { platform: options.platform, home: options.home });
+    display = quote.display;
+  }
+  const summary = await collectDisplayUsage(vibe, display, {
+    ...runtime,
+    now,
+    timeZone: options.timeZone,
+    fetchUsageImpl: options.fetchUsageImpl,
+  });
 
   if (command === 'dry-run') {
-    const payload = buildCanvasPayload(summary, options.now ?? new Date());
+    const payload = buildCanvasPayload(summary, now);
     const payloadInfo = validateCanvasPayload(payload, [vibe.apiKey]);
     stdout(JSON.stringify(dryRunSummary(summary, payload, payloadInfo), null, 2));
     return { command, summary, payload };
   }
 
-  const quote = loadQuoteConfig(env);
   if (command === 'doctor') {
     const tasks = await listDeviceTasks(quote, runtime);
     const task = selectCanvasTask(tasks.data, quote.taskKey);
     await getCanvasStatus(quote, runtime);
-    stdout('Vibe 1 日与 7 日用量响应校验通过。');
+    stdout(`Vibe ${summary.ranges.main.description}与${summary.ranges.secondary.description}用量响应校验通过。`);
     stdout(`Quote CANVAS_API 已找到：${maskIdentifier(task.taskKey ?? task.key ?? task.id)}`);
     stdout('Quote 设备状态与 renderInfo 响应校验通过。');
     return { command, summary, task };
   }
 
-  const payload = buildCanvasPayload(summary, options.now ?? new Date());
+  const payload = buildCanvasPayload(summary, now);
   validateCanvasPayload(payload, [vibe.apiKey, quote.apiKey]);
   const result = await pushCanvasAndWait(quote, payload, {
     ...runtime,

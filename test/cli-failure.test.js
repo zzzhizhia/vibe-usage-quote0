@@ -45,7 +45,7 @@ async function failureScenario(kind) {
   const server = createServer((request, response) => {
     response.setHeader('content-type', 'application/json');
     if (request.url.startsWith('/api/usage')) {
-      response.end(JSON.stringify(request.url.includes('days=1') ? todayUsage : weekUsage));
+      response.end(JSON.stringify(request.url.includes('days=7') ? weekUsage : todayUsage));
       return;
     }
     if (request.url.endsWith('/loop/list')) {
@@ -86,7 +86,7 @@ test('CLI doctor 在设备休眠时非零退出且不误报可用', async () => 
   const server = createServer((request, response) => {
     response.setHeader('content-type', 'application/json');
     if (request.url.startsWith('/api/usage')) {
-      response.end(JSON.stringify(request.url.includes('days=1') ? todayUsage : weekUsage));
+      response.end(JSON.stringify(request.url.includes('days=7') ? weekUsage : todayUsage));
       return;
     }
     if (request.url.endsWith('/loop/list')) {

@@ -78,16 +78,16 @@ function metric(label, value, alignment = 'start') {
 }
 
 export function buildCanvasPayload(summary, now = new Date()) {
-  const todayHasData = summary.today.hasAnyData;
+  const mainHasData = summary.main.hasAnyData;
   const data = {
     updatedAt: formatUpdatedAt(now),
-    todayTokens: todayHasData ? formatTokens(summary.today.totalTokens) : '暂无数据',
-    todayCost: formatCost(summary.today.estimatedCost),
-    todaySessions: formatCount(summary.today.sessionCount),
-    todayActive: formatActiveTime(summary.today.activeSeconds),
-    weekTokens: summary.week.hasAnyData ? formatTokens(summary.week.totalTokens) : '暂无数据',
-    weekCost: formatCost(summary.week.estimatedCost),
-    primaryUsage: primaryUsageLine(summary.week.topTools[0], summary.week.topModels[0]),
+    mainTokens: mainHasData ? formatTokens(summary.main.totalTokens) : '暂无数据',
+    mainCost: formatCost(summary.main.estimatedCost),
+    mainSessions: formatCount(summary.main.sessionCount),
+    mainActive: formatActiveTime(summary.main.activeSeconds),
+    secondaryTokens: summary.secondary.hasAnyData ? formatTokens(summary.secondary.totalTokens) : '暂无数据',
+    secondaryCost: formatCost(summary.secondary.estimatedCost),
+    primaryUsage: primaryUsageLine(summary.main.topTools[0], summary.main.topModels[0]),
   };
 
   const windowData = {
@@ -131,7 +131,13 @@ export function buildCanvasPayload(summary, now = new Date()) {
                           props: {
                             tw: 'flex flex-row items-center gap-[5px]',
                             children: [
-                              { type: 'span', props: { tw: 'text-11-chillduansans font-bold', children: '今日' } },
+                              {
+                                type: 'span',
+                                props: {
+                                  tw: 'text-11-chillduansans font-bold',
+                                  children: summary.ranges.main.label,
+                                },
+                              },
                               {
                                 type: 'span',
                                 props: { tw: 'text-10-chillduansans', style: { letterSpacing: '0.4px' }, children: 'TOKEN' },
@@ -144,7 +150,7 @@ export function buildCanvasPayload(summary, now = new Date()) {
                           props: {
                             tw: 'text-[40px]-chillduansans font-bold leading-none min-w-0',
                             style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-                            children: '{{get inputData "todayTokens" default="暂无数据"}}',
+                            children: '{{get inputData "mainTokens" default="暂无数据"}}',
                           },
                         },
                       ],
@@ -155,13 +161,20 @@ export function buildCanvasPayload(summary, now = new Date()) {
                     props: {
                       tw: 'flex flex-col w-[88px] min-w-0 items-start justify-center gap-[2px]',
                       children: [
-                        { type: 'span', props: { tw: 'text-11-chillduansans font-bold', children: '近 7 日' } },
+                        {
+                          type: 'span',
+                          props: {
+                            tw: 'text-11-chillduansans font-bold min-w-0',
+                            style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+                            children: summary.ranges.secondary.label,
+                          },
+                        },
                         {
                           type: 'span',
                           props: {
                             tw: 'text-[22px]-chillduansans font-bold leading-none min-w-0',
                             style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-                            children: '{{get inputData "weekTokens" default="暂无数据"}}',
+                            children: '{{get inputData "secondaryTokens" default="暂无数据"}}',
                           },
                         },
                         {
@@ -169,7 +182,7 @@ export function buildCanvasPayload(summary, now = new Date()) {
                           props: {
                             tw: 'text-11-chillduansans min-w-0',
                             style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-                            children: '费用 {{get inputData "weekCost" default="$0.00"}}',
+                            children: '费用 {{get inputData "secondaryCost" default="$0.00"}}',
                           },
                         },
                       ],
@@ -184,9 +197,9 @@ export function buildCanvasPayload(summary, now = new Date()) {
                 tw: 'flex flex-row shrink-0 justify-between gap-[10px] min-w-0',
                 style: { paddingTop: '5px' },
                 children: [
-                  metric('费用', '{{get inputData "todayCost" default="$0.00"}}', 'start'),
-                  metric('会话', '{{get inputData "todaySessions" default="0"}}', 'center'),
-                  metric('活跃', '{{get inputData "todayActive" default="0秒"}}', 'end'),
+                  metric('费用', '{{get inputData "mainCost" default="$0.00"}}', 'start'),
+                  metric('会话', '{{get inputData "mainSessions" default="0"}}', 'center'),
+                  metric('活跃', '{{get inputData "mainActive" default="0秒"}}', 'end'),
                 ],
               },
             },

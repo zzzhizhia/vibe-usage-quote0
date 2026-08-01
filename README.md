@@ -1,6 +1,6 @@
 # vibe-usage-quote0
 
-把 Vibe Usage 云端的真实 AI 编码用量，稳定推送到 Quote/0 的 296×152 黑白桌面画板。画面突出今日 Token，并显示今日费用、会话数、活跃时长、近 7 日 Token/费用，以及一个主力工具和模型提示；不会发送项目名。总 Token 与网页面板口径一致，包含缓存输入 Token。
+把 Vibe Usage 云端的真实 AI 编码用量，稳定推送到 Quote/0 的 296×152 黑白桌面画板。主要数据默认显示今天的 Token、费用、会话数、活跃时长与主力工具/模型，次要数据默认显示近 7 日 Token/费用；两块区域都可独立切换为今天、24H、7D、30D、90D、任意 N 日或自定义日期。画板不会发送项目名，总 Token 与网页面板口径一致，包含缓存输入 Token。
 
 ![Vibe Usage 在 Quote/0 上的用量画板示例](https://raw.githubusercontent.com/zzzhizhia/vibe-usage-quote0/main/artifacts/quote0-render-4x.png)
 
@@ -28,7 +28,7 @@ vibe-usage-quote0 enable
 
 `enable` 会在交互式终端中隐藏读取 Vibe API Key、Dot API Key 和设备 ID，然后自动完成：
 
-1. 验证 Vibe 1 日与 7 日用量接口及 Dot/Quote 凭据。
+1. 验证当前主要/次要显示档位的 Vibe 用量接口及 Dot/Quote 凭据。
 2. 发现设备上的 `CANVAS_API`；存在多个画板时要求按脱敏编号选择，不猜测目标。
 3. 原子写入受保护的配置，不把凭据放进命令参数、日志或定时任务。
 4. 执行一次真实 push，等待最多 90 秒并确认渲染确实发生变化。
@@ -42,7 +42,9 @@ vibe-usage-quote0 enable
 vibe-usage-quote0 doctor
 vibe-usage-quote0 dry-run
 vibe-usage-quote0 push
-vibe-usage-quote0 interval
+vibe-usage-quote0 display main today
+vibe-usage-quote0 display secondary 7d
+vibe-usage-quote0 interval 30
 vibe-usage-quote0 disable
 vibe-usage-quote0 update
 ```
@@ -50,14 +52,36 @@ vibe-usage-quote0 update
 | 命令 | 作用 |
 |---|---|
 | `enable` | 安全配置、真实推送并安装当前平台的自动刷新 |
-| `doctor` | 读取 Vibe 1 日/7 日数据，确认目标画板与设备状态 |
+| `doctor` | 读取已配置的两组 Vibe 时间窗口，确认目标画板与设备状态 |
 | `dry-run` | 只访问 Vibe，输出聚合数值与 Canvas payload 脱敏摘要 |
 | `push` | 立即推送，并等待真实渲染变化 |
+| `display <main/secondary> <range>` | 独立配置主要或次要数据的显示档位，下次刷新生效 |
 | `interval <minutes>` | 设置 1-44640 分钟的刷新间隔，并更新已安装的调度任务 |
 | `disable` | 解除本工具的定时任务，保留配置、日志和渲染图 |
 | `update` | 通过 npm 全局更新至最新版 |
 
 `push` 会先精确选择画板，再检查设备状态。休眠、离线、关机或未知状态会在 Canvas POST 前失败。只有 `renderInfo.last`、渲染图 URL 或同一 URL 的图片内容指纹发生变化才算成功；HTTP 2xx 本身不算渲染完成。
+
+## 显示档位
+
+红框对应 `main`：Token 大数字、费用、会话、活跃时长和主力工具/模型都会使用这一时间窗口。绿框对应 `secondary`：Token 和费用使用另一套独立时间窗口。默认值是 `main=today`、`secondary=7d`。
+
+```bash
+# 固定档位
+vibe-usage-quote0 display main today
+vibe-usage-quote0 display main 24h
+vibe-usage-quote0 display secondary 7d
+vibe-usage-quote0 display secondary 30d
+vibe-usage-quote0 display secondary 90d
+
+# 任意 N 日（1-3650）；1d 会规范为 24h
+vibe-usage-quote0 display main 14d
+
+# 自定义首尾日期，包含开始日和结束日
+vibe-usage-quote0 display secondary 20260701-20260731
+```
+
+`today` 是当前系统时区的本地零点到现在，只会随当天用量增长；`24h` 是持续滚动的最近 24 小时，两者语义不同。`7d`、`30d`、`90d` 和其他 `Nd` 使用固定日数查询。日期与档位大小写会被规范化；无效日期、倒序日期或非法参数会在写配置前失败。命令只保存指定区域，另一块区域和所有凭据保持不变；运行 `push` 或等待下一次定时刷新即可更新画板。
 
 ## 平台与安全
 

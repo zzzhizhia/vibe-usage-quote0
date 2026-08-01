@@ -9,6 +9,7 @@ import {
   dataDirectory,
   hardenVibeConfigMode,
   isVibeConfigModeInsecure,
+  loadDisplaySettings,
   loadQuoteConfig,
   loadVibeConfig,
   normalizeIntervalMinutes,
@@ -24,13 +25,27 @@ test('刷新间隔默认 30 分钟且只接受受支持的整数分钟', () => {
   }
 });
 
-test('Quote 运行配置在旧配置没有间隔字段时保持 30 分钟默认值', () => {
+test('Quote 运行配置在旧配置缺少新字段时保留默认间隔与显示档位', () => {
   const config = loadQuoteConfig({
     QUOTE0_API_KEY: 'quote-key',
     QUOTE0_DEVICE_ID: 'device-id',
   }, { platform: 'darwin', home: '/path/that/does/not/exist' });
 
   assert.equal(config.intervalMinutes, 30);
+  assert.deepEqual(config.display, { main: 'today', secondary: '7d' });
+});
+
+test('显示配置可独立读取且不要求 Quote 凭据', (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'vibe-display-settings-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const directory = join(root, 'vibe-usage-quote0');
+  mkdirSync(directory, { recursive: true });
+  writeFileSync(join(directory, 'config.json'), JSON.stringify({
+    display: { main: '24H', secondary: '30D' },
+  }), { mode: 0o600 });
+
+  const result = loadDisplaySettings({ XDG_CONFIG_HOME: root }, { platform: 'linux' });
+  assert.deepEqual(result.display, { main: '24h', secondary: '30d' });
 });
 
 test('渲染图目录遵循 XDG_DATA_HOME', () => {

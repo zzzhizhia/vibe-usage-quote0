@@ -348,7 +348,7 @@ test('本地 mock 证明鉴权隔离、Payload 防泄漏与渲染变化', async 
     seen.push({ path: request.url, authorization: request.headers.authorization, body });
     response.setHeader('content-type', 'application/json');
     if (request.url.startsWith('/api/usage')) {
-      response.end(JSON.stringify(request.url.includes('days=1') ? todayUsage : weekUsage));
+      response.end(JSON.stringify(request.url.includes('days=7') ? weekUsage : todayUsage));
       return;
     }
     if (request.url.endsWith('/loop/list')) {

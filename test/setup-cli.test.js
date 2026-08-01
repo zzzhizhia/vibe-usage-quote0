@@ -31,7 +31,7 @@ function runFixture(t, scenario) {
   };
 }
 
-test('CLI help 列出 enable、disable、update 与 interval 命令', async () => {
+test('CLI help 列出 enable、disable、update、interval 与 display 命令', async () => {
   const output = [];
   await runCli(['--help'], { stdout: (line) => output.push(line) });
   const help = output.join('\n');
@@ -39,9 +39,51 @@ test('CLI help 列出 enable、disable、update 与 interval 命令', async () =
   assert.match(help, /vibe-usage-quote0 disable/);
   assert.match(help, /vibe-usage-quote0 update/);
   assert.match(help, /vibe-usage-quote0 interval <minutes>/);
+  assert.match(help, /vibe-usage-quote0 display <main\|secondary>/);
+  assert.match(help, /today\|24h\|Nd\|yyyyMMdd-yyyyMMdd/);
   assert.match(help, /当前平台定时刷新/);
   assert.doesNotMatch(help, /安装 Windows 定时刷新/);
   assert.doesNotMatch(help, /vibe-usage-quote0 setup/);
+});
+
+test('CLI display 独立保存主要与次要显示档位且不要求凭据', async (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'vibe-usage-quote0-display-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const output = [];
+  const tracker = createChmodTracker();
+  const options = {
+    env: { XDG_CONFIG_HOME: root },
+    platform: 'linux',
+    fileSystem: tracker.fileSystem,
+    stdout: (line) => output.push(line),
+  };
+
+  const main = await runCli(['display', 'main', '24H'], options);
+  const secondary = await runCli(['display', 'secondary', '20260701-20260731'], options);
+  const path = join(root, 'vibe-usage-quote0', 'config.json');
+
+  assert.equal(main.range.value, '24h');
+  assert.equal(secondary.range.value, '20260701-20260731');
+  assert.deepEqual(JSON.parse(readFileSync(path, 'utf8')), {
+    display: { main: '24h', secondary: '20260701-20260731' },
+  });
+  assert.equal(hasPrivateChmod(tracker.calls, path), true);
+  assert.match(output.join('\n'), /主要数据.*滚动 24 小时/);
+  assert.match(output.join('\n'), /次要数据.*2026-07-01 至 2026-07-31/);
+});
+
+test('CLI display 拒绝缺失、多余、未知区域与非法档位', async () => {
+  const cases = [
+    ['display'],
+    ['display', 'main'],
+    ['display', 'main', '7d', 'extra'],
+    ['display', 'primary', '7d'],
+    ['display', 'main', '0d'],
+    ['display', 'secondary', '20260230-20260301'],
+  ];
+  for (const argv of cases) {
+    await assert.rejects(runCli(argv, { env: {}, platform: 'linux' }), /用法|显示区域|显示档位|日期无效/);
+  }
 });
 
 test('CLI interval 无需凭据即可安全保存并等待 Linux enable 安装调度任务', async (t) => {

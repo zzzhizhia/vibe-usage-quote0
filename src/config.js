@@ -1,6 +1,7 @@
 import { chmodSync, existsSync, readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, win32 } from 'node:path';
+import { normalizeDisplaySettings } from './display.js';
 
 export const DEFAULT_VIBE_URL = 'https://vibecafe.ai';
 export const DEFAULT_QUOTE_URL = 'https://dot.mindreset.tech';
@@ -111,6 +112,11 @@ export function loadQuoteSettings(env = process.env, options = {}) {
   return { path, value };
 }
 
+export function loadDisplaySettings(env = process.env, options = {}) {
+  const { path, value } = loadQuoteSettings(env, options);
+  return { path, display: normalizeDisplaySettings(value.display) };
+}
+
 export function loadVibeConfig(env = process.env, options = {}) {
   const path = vibeConfigPath(env, options);
   const mode = fileMode(path);
@@ -140,7 +146,8 @@ export function loadQuoteConfig(env = process.env, options = {}) {
   const taskKey = env.QUOTE0_TASK_KEY || file.taskKey;
   const apiUrl = env.QUOTE0_API_URL || file.apiUrl || DEFAULT_QUOTE_URL;
   const intervalMinutes = normalizeIntervalMinutes(file.intervalMinutes);
+  const display = normalizeDisplaySettings(file.display);
   if (!apiKey) throw new Error('缺少 QUOTE0_API_KEY 或 Quote 配置 apiKey');
   if (!deviceId) throw new Error('缺少 QUOTE0_DEVICE_ID 或 Quote 配置 deviceId');
-  return { apiKey, deviceId, taskKey, apiUrl, intervalMinutes, path };
+  return { apiKey, deviceId, taskKey, apiUrl, intervalMinutes, display, path };
 }
