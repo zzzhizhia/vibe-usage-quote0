@@ -1,0 +1,1 @@
+为什么 enable 只支持 Windows？如果技术上不存在问题，请你补充 macOS/Linux 实现。
