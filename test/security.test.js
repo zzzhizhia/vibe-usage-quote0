@@ -26,6 +26,12 @@ test('路径白名单只接受明确文件与允许目录', () => {
   assert.equal(isAllowedProjectPath(join('.github', 'workflows', 'publish.yml')), true);
   assert.equal(isAllowedProjectPath(join('artifacts', 'quote0-render.png')), true);
   assert.equal(isAllowedProjectPath(join('windows', 'install.ps1')), true);
+  assert.equal(isAllowedProjectPath(join('.codex', 'config.toml')), true);
+  assert.equal(isAllowedProjectPath(join('.codex', 'hooks.json')), true);
+  assert.equal(isAllowedProjectPath(join('.entire', '.gitignore')), true);
+  assert.equal(isAllowedProjectPath(join('.entire', 'settings.json')), true);
+  assert.equal(isAllowedProjectPath(join('.codex', 'local.json')), false);
+  assert.equal(isAllowedProjectPath(join('.entire', 'credentials.json')), false);
   assert.equal(isAllowedProjectPath('q'), false);
   assert.equal(isAllowedProjectPath(join('node_modules', 'package.json')), false);
 });

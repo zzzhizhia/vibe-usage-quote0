@@ -17,6 +17,8 @@ import {
 } from '../src/config.js';
 import { createChmodTracker, hasPrivateChmod } from './helpers/file-mode.js';
 
+const CONFIG_TEST_PLATFORM = process.platform === 'win32' ? 'win32' : 'linux';
+
 test('刷新间隔默认 30 分钟且只接受受支持的整数分钟', () => {
   assert.equal(normalizeIntervalMinutes(), DEFAULT_INTERVAL_MINUTES);
   assert.equal(normalizeIntervalMinutes('45'), 45);
@@ -44,7 +46,10 @@ test('显示配置可独立读取且不要求 Quote 凭据', (t) => {
     display: { main: '24H', secondary: '30D' },
   }), { mode: 0o600 });
 
-  const result = loadDisplaySettings({ XDG_CONFIG_HOME: root }, { platform: 'linux' });
+  const result = loadDisplaySettings(
+    { XDG_CONFIG_HOME: root },
+    { platform: CONFIG_TEST_PLATFORM },
+  );
   assert.deepEqual(result.display, { main: '24h', secondary: '30d' });
 });
 

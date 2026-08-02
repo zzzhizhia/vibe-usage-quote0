@@ -5,6 +5,10 @@ const ALLOWED_FILES = new Set([
   'package.json',
   'pnpm-lock.yaml',
   '.gitignore',
+  '.codex/config.toml',
+  '.codex/hooks.json',
+  '.entire/.gitignore',
+  '.entire/settings.json',
   'LICENSE',
   'README.md',
   'CHANGELOG.md',
@@ -26,8 +30,9 @@ function projectFiles(path, root = path) {
 }
 
 export function isAllowedProjectPath(relativePath) {
-  if (ALLOWED_FILES.has(relativePath)) return true;
-  const [first] = relativePath.split(sep);
+  const normalizedPath = relativePath.split(sep).join('/');
+  if (ALLOWED_FILES.has(normalizedPath)) return true;
+  const [first] = normalizedPath.split('/');
   return ALLOWED_DIRECTORIES.has(first);
 }
 

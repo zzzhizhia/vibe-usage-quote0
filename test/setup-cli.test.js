@@ -8,6 +8,7 @@ import { runCli } from '../src/index.js';
 import { createChmodTracker, hasPrivateChmod } from './helpers/file-mode.js';
 
 const projectRoot = resolve(import.meta.dirname, '..');
+const CONFIG_TEST_PLATFORM = process.platform === 'win32' ? 'win32' : 'linux';
 
 function runFixture(t, scenario) {
   const root = mkdtempSync(join(tmpdir(), `vibe-usage-quote0-setup-fixture-${scenario}-`));
@@ -53,8 +54,9 @@ test('CLI display 独立保存主要与次要显示档位且不要求凭据', as
   const tracker = createChmodTracker();
   const options = {
     env: { XDG_CONFIG_HOME: root },
-    platform: 'linux',
+    platform: CONFIG_TEST_PLATFORM,
     fileSystem: tracker.fileSystem,
+    protectFile() {},
     stdout: (line) => output.push(line),
   };
 
@@ -67,7 +69,7 @@ test('CLI display 独立保存主要与次要显示档位且不要求凭据', as
   assert.deepEqual(JSON.parse(readFileSync(path, 'utf8')), {
     display: { main: '24h', secondary: '20260701-20260731' },
   });
-  assert.equal(hasPrivateChmod(tracker.calls, path), true);
+  if (process.platform !== 'win32') assert.equal(hasPrivateChmod(tracker.calls, path), true);
   assert.match(output.join('\n'), /主要数据.*滚动 24 小时/);
   assert.match(output.join('\n'), /次要数据.*2026-07-01 至 2026-07-31/);
 });
