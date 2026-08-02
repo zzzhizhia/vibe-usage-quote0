@@ -3,3 +3,7 @@ CI 没过
 ---
 
 不可以被 git 忽略
+
+---
+
+changelog bump tag push，不做多余思考和步骤
