@@ -1,8 +1,35 @@
-# vibe-usage-quote0
+<p align="center">
+  <img src="artifacts/readme/vibe-usage-quote0-logo.png" alt="Vibe Usage Quote/0 Logo" width="160">
+</p>
+
+<h1 align="center">vibe-usage-quote0</h1>
 
 把 Vibe Usage 云端的真实 AI 编码用量，稳定推送到 Quote/0 的 296×152 黑白桌面画板。主要数据默认显示今天的 Token、费用、会话数、活跃时长与主力工具/模型，次要数据默认显示近 7 日 Token/费用；两块区域都可独立切换为今天、24H、7D、30D、90D、任意 N 日或自定义日期。画板不会发送项目名，总 Token 与网页面板口径一致，包含缓存输入 Token。
 
-![Vibe Usage 在 Quote/0 上的用量画板示例](https://raw.githubusercontent.com/zzzhizhia/vibe-usage-quote0/main/artifacts/quote0-render-4x.png)
+<p align="center">
+  <a href="artifacts/readme/quote0-device-photo.jpg">
+    <img src="artifacts/readme/quote0-device-photo.jpg" alt="Vibe Usage 在 Quote/0 实体设备上的实际显示" width="520">
+  </a>
+</p>
+
+<p align="center"><sub>Vibe Usage 数据在 Quote/0 实体设备上的实际显示</sub></p>
+
+## 实际效果
+
+<p align="center">
+  <a href="artifacts/quote0-render-4x.png"><img src="artifacts/quote0-render-4x.png" alt="Quote/0 画板原始渲染图" width="48%"></a>
+  <a href="artifacts/readme/quote0-app-preview.png"><img src="artifacts/readme/quote0-app-preview.png" alt="Dot. App 中的 Quote/0 设备预览" width="48%"></a>
+</p>
+
+<p align="center"><sub>296×152 黑白画板渲染 · Dot. App 中的设备显示效果</sub></p>
+
+### 发布展示
+
+<p align="center">
+  <a href="artifacts/readme/vibecafe-release.png"><img src="artifacts/readme/vibecafe-release.png" alt="VibeCafe 发布展示" width="43%"></a>
+  <a href="artifacts/readme/vibe-product-page.png"><img src="artifacts/readme/vibe-product-page.png" alt="Vibe 作品页中的 Vibe Usage Quote/0" width="29%"></a>
+</p>
+<p align="center"><sub>VibeCafe 发布展示 · Vibe 作品详情</sub></p>
 
 ## 快速开始
 
