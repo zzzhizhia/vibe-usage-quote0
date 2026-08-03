@@ -2,7 +2,7 @@
   <img src="artifacts/readme/vibe-usage-quote0-logo.png" alt="Vibe Usage Quote/0 Logo" width="160">
 </p>
 
-<h1 align="center">vibe-usage-quote0</h1>
+<h1 align="center">Vibe Usage Quote/0</h1>
 
 把 Vibe Usage 云端的真实 AI 编码用量，稳定推送到 Quote/0 的 296×152 黑白桌面画板。主要数据默认显示今天的 Token、费用、会话数、活跃时长与主力工具/模型，次要数据默认显示近 7 日 Token/费用；两块区域都可独立切换为今天、24H、7D、30D、90D、任意 N 日或自定义日期。画板不会发送项目名，总 Token 与网页面板口径一致，包含缓存输入 Token。
 
