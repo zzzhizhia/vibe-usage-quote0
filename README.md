@@ -8,6 +8,29 @@
 
 开始前，请在 Dot. App 内容工坊把“画板 API”加入 Quote/0 的设备循环任务，并保持设备在线。
 
+### API Key
+
+- **`QUOTE0_API_KEY`**：在 Dot. App 的“API 密钥”页面创建。
+- **`VIBE_USAGE_API_KEY`**：可在 [Vibe Usage 设置页](https://vibecafe.ai/usage/setup)创建。通常无需手动准备：只要本机已安装并登录 Vibe Usage，本项目就会直接读取其本地凭据。
+
+推荐直接运行 `vibe-usage-quote0 enable`：CLI 会交互式询问是否复用已有凭据；缺失时以不回显方式读取所需 Key 和设备 ID，验证后写入受保护的本地配置。
+
+如需在当前终端中临时覆盖已保存的 Key，可设置环境变量：
+
+```bash
+# macOS/Linux
+export VIBE_USAGE_API_KEY="<VibeCafe API Key>"
+export QUOTE0_API_KEY="<Dot API Key>"
+```
+
+```powershell
+# Windows PowerShell
+$env:VIBE_USAGE_API_KEY = "<VibeCafe API Key>"
+$env:QUOTE0_API_KEY = "<Dot API Key>"
+```
+
+这些设置仅对当前终端会话生效，可用于 `doctor`、`dry-run` 和 `push`。环境变量只覆盖 Key；设备 ID 和画板仍从本地配置读取。自动刷新任务不会保存或继承 API Key 环境变量，长期配置请使用 `enable`，不要把真实凭据写入 shell 配置、脚本或仓库。
+
 ### macOS/Linux
 
 需要 Node.js 20+。Linux 自动刷新还需要可用的 systemd 用户会话。
@@ -26,7 +49,7 @@ npm install -g vibe-usage-quote0
 vibe-usage-quote0 enable
 ```
 
-`enable` 会在交互式终端中隐藏读取 Vibe API Key、Dot API Key 和设备 ID，然后自动完成：
+`enable` 会在交互式终端中隐藏读取 `VIBE_USAGE_API_KEY`、`QUOTE0_API_KEY` 和设备 ID，然后自动完成：
 
 1. 验证当前主要/次要显示档位的 Vibe 用量接口及 Dot/Quote 凭据。
 2. 发现设备上的 `CANVAS_API`；存在多个画板时要求按脱敏编号选择，不猜测目标。
