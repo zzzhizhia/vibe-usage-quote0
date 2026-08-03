@@ -1,0 +1,17 @@
+# Files mentioned by the user:
+
+## codex-clipboard-03d2739e-d4af-484a-87e6-e71dcb6659ae.png: /var/folders/5q/3m7lyg4n6pv9m25q4ck2yqrr0000gn/T/codex-clipboard-03d2739e-d4af-484a-87e6-e71dcb6659ae.png
+
+## codex-clipboard-e044e191-073e-4d38-a571-4bca11f42e7c.jpg: /var/folders/5q/3m7lyg4n6pv9m25q4ck2yqrr0000gn/T/codex-clipboard-e044e191-073e-4d38-a571-4bca11f42e7c.jpg
+
+## My request for Codex:
+在 [README.md](README.md) 加个内容，要在 Dot. App 中获取 Dot. API Key，在 https://vibecafe.ai/usage/setup 获取 VibeCafe API Key。但后者通常不是必要的，因为只要本地已安装并登录 Vibe Usage，本项目就可以直接读取本地凭据。只加，后续操作等我 review 后进行。
+
+---
+
+把两个名称改成所需的环境变量名称，并附加环境变量配置教程。CLI 中应该已经给到交互式了（应该？）
+
+---
+
+'/Users/zzzhizhi/Documents/Vibe Usage Quote:0'
+把这里的图都放进 README，排版美观。

@@ -1,0 +1,67 @@
+{
+  "cli_version": "0.9.0",
+  "checkpoint_id": "01KZ47DHHV1DH89H6DGQB6QV5Q",
+  "session_id": "019fc857-7f8c-7983-a592-052337cd818d",
+  "strategy": "manual-commit",
+  "created_at": "2026-08-03T16:31:22.092671Z",
+  "branch": "main",
+  "checkpoints_count": 3,
+  "save_step_count": 3,
+  "files_touched": [
+    "README.md",
+    "artifacts/readme/quote0-app-preview.png",
+    "artifacts/readme/quote0-device-photo.jpg",
+    "artifacts/readme/vibe-product-page.png",
+    "artifacts/readme/vibe-usage-quote0-logo.png",
+    "artifacts/readme/vibecafe-release.png"
+  ],
+  "agent": "Codex",
+  "model": "gpt-5.6-sol",
+  "turn_id": "9bec025c7fff",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 188513,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 2058240,
+    "output_tokens": 20912,
+    "api_call_count": 32
+  },
+  "session_metrics": {
+    "turn_count": 3
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-08-03T16:31:21.99207Z",
+    "agent_lines": 53,
+    "agent_removed": 3,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 53,
+    "total_lines_changed": 56,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
