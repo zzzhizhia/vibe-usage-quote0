@@ -1,0 +1,21 @@
+给这个 npm CLI 包添加 `vuq` 命令，和 `vibe-usage-quote0` 并列
+
+---
+
+“仓库原地安全扫描仍会被既有 .entire 忽略数据触发”是什么意思，如何解决
+
+---
+
+检查一下这个 key 有没有被推到远端
+
+---
+
+清理包含 key 的本机 Entire 归档副本即可
+
+---
+
+changelog bump commit tag push
+
+---
+
+直接把 key 部分脱敏化即可
