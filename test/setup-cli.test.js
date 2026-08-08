@@ -43,8 +43,17 @@ test('CLI help 列出 enable、disable、update、interval 与 display 命令', 
   assert.match(help, /vibe-usage-quote0 display <main\|secondary>/);
   assert.match(help, /today\|24h\|Nd\|yyyyMMdd-yyyyMMdd/);
   assert.match(help, /当前平台定时刷新/);
+  assert.match(help, /简写为 vuq/);
   assert.doesNotMatch(help, /安装 Windows 定时刷新/);
   assert.doesNotMatch(help, /vibe-usage-quote0 setup/);
+});
+
+test('npm 包并列注册完整命令与 vuq 简写', () => {
+  const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8'));
+  assert.deepEqual(packageJson.bin, {
+    'vibe-usage-quote0': './src/index.js',
+    vuq: './src/index.js',
+  });
 });
 
 test('CLI display 独立保存主要与次要显示档位且不要求凭据', async (t) => {

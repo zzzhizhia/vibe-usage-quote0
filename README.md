@@ -40,7 +40,7 @@
 - **`QUOTE0_API_KEY`**：在 Dot. App 的“API 密钥”页面创建。
 - **`VIBE_USAGE_API_KEY`**：可在 [Vibe Usage 设置页](https://vibecafe.ai/usage/setup)创建。通常无需手动准备：只要本机已安装并登录 Vibe Usage，本项目就会直接读取其本地凭据。
 
-推荐直接运行 `vibe-usage-quote0 enable`：CLI 会交互式询问是否复用已有凭据；缺失时以不回显方式读取所需 Key 和设备 ID，验证后写入受保护的本地配置。
+推荐直接运行 `vuq enable`：CLI 会交互式询问是否复用已有凭据；缺失时以不回显方式读取所需 Key 和设备 ID，验证后写入受保护的本地配置。`vuq` 与 `vibe-usage-quote0` 完全等价，可按需使用任一命令。
 
 如需在当前终端中临时覆盖已保存的 Key，可设置环境变量：
 
@@ -64,7 +64,7 @@ $env:QUOTE0_API_KEY = "<Dot API Key>"
 
 ```bash
 npm install -g vibe-usage-quote0
-vibe-usage-quote0 enable
+vuq enable
 ```
 
 ### Windows 10/11
@@ -73,7 +73,7 @@ vibe-usage-quote0 enable
 
 ```powershell
 npm install -g vibe-usage-quote0
-vibe-usage-quote0 enable
+vuq enable
 ```
 
 `enable` 会在交互式终端中隐藏读取 `VIBE_USAGE_API_KEY`、`QUOTE0_API_KEY` 和设备 ID，然后自动完成：
@@ -84,19 +84,19 @@ vibe-usage-quote0 enable
 4. 执行一次真实 push，等待最多 90 秒并确认渲染确实发生变化。
 5. 安装当前用户的 30 分钟自动刷新：macOS 使用 launchd，Linux 使用 systemd user timer，Windows 使用 Limited 计划任务。
 
-已有配置默认复用；替换时必须再次确认。新凭据验证失败不会覆盖旧配置。设备休眠或调度安装失败时，有效配置会保留，命令会明确说明失败阶段；修复后重新运行同一条 `vibe-usage-quote0 enable` 即可。
+已有配置默认复用；替换时必须再次确认。新凭据验证失败不会覆盖旧配置。设备休眠或调度安装失败时，有效配置会保留，命令会明确说明失败阶段；修复后重新运行同一条 `vuq enable` 即可。
 
 ## 常用命令
 
 ```bash
-vibe-usage-quote0 doctor
-vibe-usage-quote0 dry-run
-vibe-usage-quote0 push
-vibe-usage-quote0 display main today
-vibe-usage-quote0 display secondary 7d
-vibe-usage-quote0 interval 30
-vibe-usage-quote0 disable
-vibe-usage-quote0 update
+vuq doctor
+vuq dry-run
+vuq push
+vuq display main today
+vuq display secondary 7d
+vuq interval 30
+vuq disable
+vuq update
 ```
 
 | 命令 | 作用 |

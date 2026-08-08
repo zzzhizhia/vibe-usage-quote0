@@ -66,11 +66,14 @@ jobs:
 
           $nodePath = (Get-Command node.exe -CommandType Application | Select-Object -First 1).Source
           $cliPath = (Get-Command vibe-usage-quote0.cmd -CommandType Application | Select-Object -First 1).Source
-          & $cliPath --help
-          if ($LASTEXITCODE -ne 0) { throw '.cmd --help failed' }
-          $helpOutput = & $cliPath --help | Out-String
-          if ($LASTEXITCODE -ne 0 -or $helpOutput -notmatch 'vibe-usage-quote0 enable' -or $helpOutput -match 'vibe-usage-quote0 setup') {
-            throw '.cmd help does not expose only the new enable command'
+          $shortCliPath = (Get-Command vuq.cmd -CommandType Application | Select-Object -First 1).Source
+          foreach ($installedCliPath in @($cliPath, $shortCliPath)) {
+            & $installedCliPath --help
+            if ($LASTEXITCODE -ne 0) { throw "$installedCliPath --help failed" }
+            $helpOutput = & $installedCliPath --help | Out-String
+            if ($LASTEXITCODE -ne 0 -or $helpOutput -notmatch 'vibe-usage-quote0 / vuq' -or $helpOutput -notmatch 'vibe-usage-quote0 enable' -or $helpOutput -match 'vibe-usage-quote0 setup') {
+              throw "$installedCliPath help output is invalid"
+            }
           }
 
           $fixtureStdout = Join-Path $env:RUNNER_TEMP 'setup-fixture.stdout.txt'

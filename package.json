@@ -1,6 +1,6 @@
 {
   "name": "vibe-usage-quote0",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "将 Vibe Usage 云端 AI 编码用量推送到 Quote/0 画板。",
   "type": "module",
   "license": "MIT",
@@ -21,7 +21,8 @@
     "url": "https://github.com/zzzhizhia/vibe-usage-quote0/issues"
   },
   "bin": {
-    "vibe-usage-quote0": "./src/index.js"
+    "vibe-usage-quote0": "./src/index.js",
+    "vuq": "./src/index.js"
   },
   "files": [
     "src",

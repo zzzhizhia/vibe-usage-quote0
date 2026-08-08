@@ -18,7 +18,7 @@ import { runSetup } from './setup.js';
 import { updateSelf } from './update.js';
 import { collectDisplayUsage } from './usage.js';
 
-const HELP = `vibe-usage-quote0
+const HELP = `vibe-usage-quote0 / vuq
 
 用法：
   vibe-usage-quote0 enable   交互式安全配置、真实推送并安装当前平台定时刷新
@@ -30,6 +30,8 @@ const HELP = `vibe-usage-quote0
   vibe-usage-quote0 interval <minutes>  配置推送刷新间隔（默认 30 分钟）
   vibe-usage-quote0 display <main|secondary> <today|24h|Nd|yyyyMMdd-yyyyMMdd>
                              配置主要或次要数据的显示档位
+
+以上命令均可将 vibe-usage-quote0 简写为 vuq。
 `;
 
 function defaultLogger(event) {
